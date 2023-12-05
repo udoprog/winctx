@@ -298,7 +298,6 @@ impl Window {
             let mut msg = MaybeUninit::<winuser::MSG>::zeroed();
 
             loop {
-                println!("GetMessage");
                 let ret = winuser::GetMessageW(msg.as_mut_ptr(), info.hwnd, 0, 0);
 
                 {
@@ -312,9 +311,7 @@ impl Window {
                     }
                 }
 
-                println!("Translate");
                 winuser::TranslateMessage(msg.as_ptr());
-                println!("Dispatch");
                 winuser::DispatchMessageW(msg.as_ptr());
             }
 
