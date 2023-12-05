@@ -61,7 +61,6 @@ impl EventLoop {
                             self.window.send_notification(n).map_err(SendNotification)?;
                         }
                         InputEvent::Shutdown => {
-                            println!("Joining window...");
                             self.window.join()?;
                             return Ok(Event::Shutdown);
                         }
