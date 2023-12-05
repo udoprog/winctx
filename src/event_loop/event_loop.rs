@@ -1,8 +1,11 @@
+use std::collections::VecDeque;
+
 use tokio::sync::mpsc;
 
 use crate::error::Error;
 use crate::error::ErrorKind::*;
 use crate::window::{Window, WindowEvent};
+use crate::Notification;
 use crate::Result;
 
 use super::{Event, Icon, InputEvent, Token};
@@ -13,7 +16,8 @@ pub struct EventLoop {
     icon_error: Option<Icon>,
     events_rx: mpsc::UnboundedReceiver<InputEvent>,
     window: Window,
-    balloons: Vec<u32>,
+    visible: Option<u32>,
+    pending: VecDeque<(u32, Notification)>,
 }
 
 impl EventLoop {
@@ -28,8 +32,22 @@ impl EventLoop {
             icon_error,
             events_rx,
             window,
-            balloons: Vec::new(),
+            visible: None,
+            pending: VecDeque::new(),
         }
+    }
+
+    fn take_notification(&mut self) -> Result<u32> {
+        let id = self.visible.take().ok_or(MissingNotification)?;
+
+        if let Some((id, n)) = self.pending.pop_front() {
+            self.visible = Some(id);
+            self.window
+                .send_notification(id, n)
+                .map_err(SendNotification)?;
+        }
+
+        Ok(id)
     }
 
     /// Tick the event loop.
@@ -57,8 +75,12 @@ impl EventLoop {
                             }
                         }
                         InputEvent::Notification(id, n) => {
-                            self.balloons.push(id);
-                            self.window.send_notification(n).map_err(SendNotification)?;
+                            if self.visible.is_some() {
+                                self.pending.push_back((id, n));
+                            } else {
+                                self.visible = Some(id);
+                                self.window.send_notification(id, n).map_err(SendNotification)?;
+                            }
                         }
                         InputEvent::Shutdown => {
                             self.window.join()?;
@@ -76,14 +98,12 @@ impl EventLoop {
                             return Ok(Event::Shutdown);
                         }
                         WindowEvent::BalloonClicked => {
-                            if let Some(token) = self.balloons.pop() {
-                                return Ok(Event::NotificationClicked(Token::new(token)));
-                            }
+                            let current = self.take_notification()?;
+                            return Ok(Event::NotificationClicked(Token::new(current)));
                         }
                         WindowEvent::BalloonTimeout => {
-                            if let Some(token) = self.balloons.pop() {
-                                return Ok(Event::NotificationTimeout(Token::new(token)));
-                            }
+                            let current = self.take_notification()?;
+                            return Ok(Event::NotificationDismissed(Token::new(current)));
                         }
                     }
                 }

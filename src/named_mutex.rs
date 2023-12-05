@@ -26,6 +26,17 @@ impl NamedMutex {
     /// # Errors
     ///
     /// Errors in case the named mutex could not be created.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::NamedMutex;
+    ///
+    /// if let Some(_m) = NamedMutex::create_acquired("se.tedro.Example")? {
+    ///     // The only one holding the mutex.
+    /// }
+    /// # Ok::<_, winctx::Error>(())
+    /// ```
     pub fn create_acquired<N>(name: N) -> Result<Option<Self>>
     where
         N: fmt::Display,

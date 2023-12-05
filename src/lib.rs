@@ -33,6 +33,7 @@
 //!
 //!     builder.add_menu_entry("Hello World", true);
 //!     let notification = builder.add_menu_entry("Show notification", false);
+//!     let notification_multiple = builder.add_menu_entry("Show multiple notifications", false);
 //!     builder.add_menu_separator();
 //!     let quit = builder.add_menu_entry("Quit", false);
 //!
@@ -55,27 +56,34 @@
 //!
 //!         match event {
 //!             Event::MenuEntryClicked(token) => {
-//!                 println!("Clicked: {:?}", token);
+//!                 println!("Menu entry clicked: {:?}", token);
 //!
 //!                 if token == notification {
 //!                     sender.notification(
 //!                         Notification::new("And this is a body").with_title("This is a title"),
 //!                     );
+//!                     continue;
+//!                 }
+//!
+//!                 if token == notification_multiple {
+//!                     sender.notification(Notification::new("First"));
+//!                     sender.notification(Notification::new("Second"));
+//!                     continue;
 //!                 }
 //!
 //!                 if token == quit {
 //!                     sender.shutdown();
 //!                 }
 //!             }
-//!             Event::Shutdown => {
-//!                 println!("Window shut down");
-//!                 break;
-//!             }
 //!             Event::NotificationClicked(token) => {
 //!                 println!("Balloon clicked: {:?}", token);
 //!             }
-//!             Event::NotificationTimeout(token) => {
-//!                 println!("Notification timed out: {:?}", token);
+//!             Event::NotificationDismissed(token) => {
+//!                 println!("Notification dismissed: {:?}", token);
+//!             }
+//!             Event::Shutdown => {
+//!                 println!("Window shut down");
+//!                 break;
 //!             }
 //!             _ => {}
 //!         }

@@ -4,21 +4,23 @@ use std::cell::UnsafeCell;
 use std::io;
 use std::marker::PhantomData;
 use std::mem::size_of;
+use std::mem::MaybeUninit;
 use std::ptr;
 use std::thread;
 
 use tokio::sync::{mpsc, oneshot};
-use winapi::shared::minwindef::{DWORD, FALSE, LPARAM, LRESULT, PBYTE, TRUE, UINT, WPARAM};
-use winapi::shared::windef::{HBRUSH, HICON, HMENU, HWND, POINT};
-use winapi::um::shellapi;
-use winapi::um::winuser;
+use windows_sys::Win32::Foundation::{FALSE, HWND, LPARAM, LRESULT, TRUE, WPARAM};
+use windows_sys::Win32::Graphics::Gdi::HBRUSH;
+use windows_sys::Win32::UI::Shell as shellapi;
+use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
+use windows_sys::Win32::UI::WindowsAndMessaging::{HICON, HMENU};
 
 use crate::convert::ToWide;
 use crate::error::Error;
 use crate::error::ErrorKind::*;
 use crate::{Notification, Result};
 
-const ICON_MSG_ID: UINT = winuser::WM_USER + 1;
+const ICON_MSG_ID: u32 = winuser::WM_USER + 1;
 
 // Stash that is shared with the window process.
 //
@@ -73,10 +75,10 @@ struct WindowInfo {
 
 impl WindowInfo {
     fn new_nid(&self) -> shellapi::NOTIFYICONDATAW {
-        let mut nid = shellapi::NOTIFYICONDATAW::default();
-        nid.cbSize = size_of::<shellapi::NOTIFYICONDATAW>() as DWORD;
+        let mut nid: shellapi::NOTIFYICONDATAW = unsafe { MaybeUninit::zeroed().assume_init() };
+        nid.cbSize = size_of::<shellapi::NOTIFYICONDATAW>() as u32;
         nid.hWnd = self.hwnd;
-        nid.uID = 0x1 as UINT;
+        nid.uID = 0x1;
         nid
     }
 
@@ -126,7 +128,7 @@ pub(crate) enum WindowEvent {
 
 unsafe extern "system" fn window_proc(
     hwnd: HWND,
-    msg: UINT,
+    msg: u32,
     w_param: WPARAM,
     l_param: LPARAM,
 ) -> LRESULT {
@@ -134,7 +136,7 @@ unsafe extern "system" fn window_proc(
 
     match msg {
         ICON_MSG_ID => {
-            match l_param as UINT {
+            match l_param as u32 {
                 // Balloon clicked.
                 shellapi::NIN_BALLOONUSERCLICK => {
                     _ = stash.tx.send(WindowEvent::BalloonClicked);
@@ -146,11 +148,13 @@ unsafe extern "system" fn window_proc(
                     return 0;
                 }
                 winuser::WM_LBUTTONUP | winuser::WM_RBUTTONUP => {
-                    let mut p = POINT::default();
+                    let mut p = MaybeUninit::zeroed();
 
-                    if winuser::GetCursorPos(&mut p as *mut POINT) == FALSE {
+                    if winuser::GetCursorPos(p.as_mut_ptr()) == FALSE {
                         return 1;
                     }
+
+                    let p = p.assume_init();
 
                     winuser::SetForegroundWindow(hwnd);
 
@@ -189,8 +193,8 @@ unsafe extern "system" fn window_proc(
 }
 
 fn new_menuitem() -> winuser::MENUITEMINFOW {
-    let mut info = winuser::MENUITEMINFOW::default();
-    info.cbSize = size_of::<winuser::MENUITEMINFOW>() as UINT;
+    let mut info: winuser::MENUITEMINFOW = unsafe { MaybeUninit::zeroed().assume_init() };
+    info.cbSize = size_of::<winuser::MENUITEMINFOW>() as u32;
     info
 }
 
@@ -200,9 +204,9 @@ unsafe fn init_window(class_name: Vec<u16>, name: Vec<u16>) -> io::Result<Window
         lpfnWndProc: Some(window_proc),
         cbClsExtra: 0,
         cbWndExtra: 0,
-        hInstance: ptr::null_mut(),
-        hIcon: winuser::LoadIconW(ptr::null_mut(), winuser::IDI_APPLICATION),
-        hCursor: winuser::LoadCursorW(ptr::null_mut(), winuser::IDI_APPLICATION),
+        hInstance: 0,
+        hIcon: winuser::LoadIconW(0, winuser::IDI_APPLICATION),
+        hCursor: winuser::LoadCursorW(0, winuser::IDI_APPLICATION),
         hbrBackground: 16 as HBRUSH,
         lpszMenuName: ptr::null(),
         lpszClassName: class_name.as_ptr(),
@@ -221,13 +225,13 @@ unsafe fn init_window(class_name: Vec<u16>, name: Vec<u16>) -> io::Result<Window
         0,
         winuser::CW_USEDEFAULT,
         0,
-        ptr::null_mut(),
-        ptr::null_mut(),
-        ptr::null_mut(),
-        ptr::null_mut(),
+        0,
+        0,
+        0,
+        ptr::null(),
     );
 
-    if hwnd.is_null() {
+    if hwnd == 0 {
         return Err(io::Error::last_os_error());
     }
 
@@ -235,11 +239,11 @@ unsafe fn init_window(class_name: Vec<u16>, name: Vec<u16>) -> io::Result<Window
     let hmenu = winuser::CreatePopupMenu();
 
     let m = winuser::MENUINFO {
-        cbSize: size_of::<winuser::MENUINFO>() as DWORD,
+        cbSize: size_of::<winuser::MENUINFO>() as u32,
         fMask: winuser::MIM_APPLYTOSUBMENUS | winuser::MIM_STYLE,
         dwStyle: winuser::MNS_NOTIFYBYPOS,
         cyMax: 0,
-        hbrBack: ptr::null_mut(),
+        hbrBack: 0,
         dwContextHelpID: 0,
         dwMenuData: 0,
     };
@@ -291,18 +295,27 @@ impl Window {
 
             let _stash = stash.install();
 
-            let mut msg = winuser::MSG::default();
+            let mut msg = MaybeUninit::<winuser::MSG>::zeroed();
 
             loop {
-                let ret = winuser::GetMessageW(&mut msg, info.hwnd, 0, 0);
+                println!("GetMessage");
+                let ret = winuser::GetMessageW(msg.as_mut_ptr(), info.hwnd, 0, 0);
 
-                if ret == 0 || msg.message == winuser::WM_QUIT || msg.message == winuser::WM_DESTROY
                 {
-                    break;
+                    let msg = &*msg.as_ptr();
+
+                    if ret == 0
+                        || msg.message == winuser::WM_QUIT
+                        || msg.message == winuser::WM_DESTROY
+                    {
+                        break;
+                    }
                 }
 
-                winuser::TranslateMessage(&msg);
-                winuser::DispatchMessageW(&msg);
+                println!("Translate");
+                winuser::TranslateMessage(msg.as_ptr());
+                println!("Dispatch");
+                winuser::DispatchMessageW(msg.as_ptr());
             }
 
             _ = info.delete_icon();
@@ -406,7 +419,7 @@ impl Window {
     }
 
     /// Send a notification.
-    pub(crate) fn send_notification(&self, n: Notification) -> io::Result<()> {
+    pub(crate) fn send_notification(&self, token: u32, n: Notification) -> io::Result<()> {
         let mut nid = self.info.new_nid();
         nid.uFlags = shellapi::NIF_INFO;
 
@@ -417,12 +430,11 @@ impl Window {
         copy_wstring(&mut nid.szInfo, n.message.as_str());
 
         if let Some(timeout) = n.timeout {
-            unsafe {
-                *nid.u.uTimeout_mut() = timeout.as_millis() as u32;
-            }
+            nid.Anonymous.uTimeout = timeout.as_millis() as u32;
         }
 
         nid.dwInfoFlags = n.icon.into_flags();
+        nid.uCallbackMessage = token;
 
         let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &mut nid) };
 
@@ -442,7 +454,7 @@ impl Window {
     ) -> io::Result<()> {
         let offset = unsafe {
             winuser::LookupIconIdFromDirectoryEx(
-                buffer.as_ptr() as PBYTE,
+                buffer.as_ptr(),
                 TRUE,
                 width as i32,
                 height as i32,
@@ -458,8 +470,8 @@ impl Window {
 
         let hicon = unsafe {
             winuser::CreateIconFromResourceEx(
-                icon_data.as_ptr() as PBYTE,
-                icon_data.len() as DWORD,
+                icon_data.as_ptr(),
+                icon_data.len() as u32,
                 TRUE,
                 0x30000,
                 width as i32,
@@ -468,7 +480,7 @@ impl Window {
             )
         };
 
-        if hicon.is_null() {
+        if hicon == 0 {
             return Err(io::Error::last_os_error());
         }
 

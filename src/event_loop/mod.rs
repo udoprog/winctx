@@ -26,8 +26,8 @@ pub enum Event {
     MenuEntryClicked(Token),
     /// Indicates that the notification with the associated token has been clicked.
     NotificationClicked(Token),
-    /// The notification associated with the given token timed out.
-    NotificationTimeout(Token),
+    /// The notification associated with the given token either timed out or was dismissed.
+    NotificationDismissed(Token),
     /// Window has been shut down.
     Shutdown,
 }
