@@ -95,13 +95,14 @@ impl RegistryKey {
 
     /// Set the given value.
     pub(crate) fn set(&self, name: &str, value: impl AsRef<OsStr>) -> io::Result<()> {
-        use std::convert::TryInto as _;
-
         let name = name.to_wide_null();
         let value = value.to_wide_null();
 
-        let value_len = u32::try_from((value.len() * 2))
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        let value_len = value
+            .len()
+            .checked_mul(2)
+            .and_then(|n| u32::try_from(n).ok())
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Value size overflow"))?;
 
         let status = unsafe {
             winreg::RegSetValueExW(
