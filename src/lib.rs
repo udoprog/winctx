@@ -86,6 +86,7 @@
 //! ```
 
 #![allow(clippy::module_inception)]
+#![deny(missing_docs)]
 
 mod convert;
 mod registry;
@@ -104,6 +105,9 @@ pub use self::autostart::AutoStart;
 mod autostart;
 
 pub mod tools;
+
+pub use self::named_mutex::NamedMutex;
+mod named_mutex;
 
 /// Result alias for winctx.
 pub type Result<T, E = Error> = core::result::Result<T, E>;

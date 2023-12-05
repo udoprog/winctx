@@ -1,6 +1,7 @@
 use std::fmt;
 use std::io;
 
+/// The error raised by this library.
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
@@ -36,6 +37,7 @@ impl fmt::Display for Error {
             ErrorKind::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
             ErrorKind::SetTooltip(..) => write!(f, "Failed to set tooltip message"),
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
+            ErrorKind::CreateMutex(..) => write!(f, "Failed to construct mutex"),
             ErrorKind::BadExecutable => write!(f, "Bad executable string"),
             ErrorKind::WindowClosed => write!(f, "Window has been closed"),
             ErrorKind::WindowThreadPanicked => write!(f, "Window thread panicked"),
@@ -57,6 +59,7 @@ impl std::error::Error for Error {
             ErrorKind::SetIcon(error) => Some(error),
             ErrorKind::SetTooltip(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
+            ErrorKind::CreateMutex(error) => Some(error),
             _ => None,
         }
     }
@@ -74,6 +77,7 @@ pub(super) enum ErrorKind {
     SetIcon(io::Error),
     SetTooltip(io::Error),
     SendNotification(io::Error),
+    CreateMutex(io::Error),
     BadExecutable,
     WindowClosed,
     WindowThreadPanicked,

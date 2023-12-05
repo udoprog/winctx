@@ -47,6 +47,7 @@ impl AutoStart {
         Ok(self.run_registry_entry()?.as_str() == path)
     }
 
+    /// Install the current executable to be automatically started.
     pub fn install(&self) -> Result<()> {
         let key = RegistryKey::current_user("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
             .map_err(GetRegistryKey)?;
@@ -56,6 +57,7 @@ impl AutoStart {
         Ok(())
     }
 
+    /// Remove the program from automatic startup.
     pub fn uninstall(&self) -> Result<()> {
         let key = RegistryKey::current_user("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
             .map_err(GetRegistryKey)?;
