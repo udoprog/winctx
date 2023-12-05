@@ -4,8 +4,8 @@ use std::io;
 use std::path::Path;
 use std::ptr;
 
-use winapi::um::shellapi::ShellExecuteW;
-use winapi::um::winuser::SW_SHOW;
+use windows_sys::Win32::UI::Shell::ShellExecuteW;
+use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOW;
 
 use crate::convert::ToWide;
 
@@ -16,7 +16,7 @@ pub fn open_dir(path: &Path) -> io::Result<bool> {
 
     let result = unsafe {
         ShellExecuteW(
-            ptr::null_mut(),
+            0,
             operation.as_ptr(),
             path.as_ptr(),
             ptr::null(),

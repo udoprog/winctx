@@ -1,14 +1,14 @@
 use std::ffi::{OsStr, OsString};
 use std::io;
+use std::mem::MaybeUninit;
 use std::ptr;
-use winapi::shared::minwindef::HKEY;
-use winapi::shared::winerror;
-use winapi::um::winnt;
-use winapi::um::winreg;
+
+use windows_sys::Win32::Foundation::ERROR_FILE_NOT_FOUND;
+use windows_sys::Win32::System::Registry as winreg;
 
 use crate::convert::{FromWide, ToWide};
 
-pub(crate) struct RegistryKey(HKEY);
+pub(crate) struct RegistryKey(winreg::HKEY);
 
 unsafe impl Sync for RegistryKey {}
 unsafe impl Send for RegistryKey {}
@@ -20,71 +20,79 @@ impl RegistryKey {
     }
 
     /// Internal open implementation.
-    fn open(reg: HKEY, key: &str) -> io::Result<RegistryKey> {
+    fn open(reg: winreg::HKEY, key: &str) -> io::Result<RegistryKey> {
         let key = key.to_wide_null();
-        let mut ret = ptr::null_mut();
 
-        let status = unsafe {
-            winreg::RegOpenKeyExW(
+        unsafe {
+            let mut hkey = MaybeUninit::uninit();
+
+            let status = winreg::RegOpenKeyExW(
                 reg,
                 key.as_ptr(),
                 0,
-                winnt::KEY_READ | winnt::KEY_SET_VALUE | winnt::KEY_WOW64_32KEY,
-                &mut ret,
-            )
-        };
+                winreg::KEY_READ | winreg::KEY_SET_VALUE | winreg::KEY_WOW64_32KEY,
+                hkey.as_mut_ptr(),
+            );
 
-        if status != 0 {
-            return Err(io::Error::last_os_error());
+            if status != 0 {
+                return Err(io::Error::last_os_error());
+            }
+
+            Ok(RegistryKey(hkey.assume_init()))
         }
-
-        Ok(RegistryKey(ret))
     }
 
     /// Get the given value.
     pub(crate) fn get(&self, name: &str) -> io::Result<Option<OsString>> {
         let name = name.to_wide_null();
-        let mut len = 0;
+        let mut len = MaybeUninit::uninit();
+        let mut len2 = MaybeUninit::uninit();
 
-        let status = unsafe {
-            winreg::RegGetValueW(
+        unsafe {
+            let status = winreg::RegGetValueW(
                 self.0,
                 ptr::null_mut(),
                 name.as_ptr(),
                 winreg::RRF_RT_REG_SZ,
                 ptr::null_mut(),
                 ptr::null_mut(),
-                &mut len,
-            )
-        };
+                len.as_mut_ptr(),
+            );
 
-        if status as u32 == winerror::ERROR_FILE_NOT_FOUND {
-            return Ok(None);
+            if status == ERROR_FILE_NOT_FOUND {
+                return Ok(None);
+            }
+
+            if status != 0 {
+                return Err(io::Error::last_os_error());
+            }
+
+            let len = len.assume_init();
+
+            let mut value = vec![0; len as usize / 2];
+
+            let status = unsafe {
+                winreg::RegGetValueW(
+                    self.0,
+                    ptr::null_mut(),
+                    name.as_ptr(),
+                    winreg::RRF_RT_REG_SZ,
+                    ptr::null_mut(),
+                    value.as_mut_ptr().cast(),
+                    len2.as_mut_ptr(),
+                )
+            };
+
+            if status != 0 {
+                return Err(io::Error::last_os_error());
+            }
+
+            let len2 = len2.assume_init();
+
+            debug_assert_eq!(len, len2 as usize / 2);
+            value.truncate(len2);
+            Ok(Some(OsString::from_wide_null(&value)))
         }
-
-        if status != 0 {
-            return Err(io::Error::last_os_error());
-        }
-
-        let mut v = vec![0; len as usize / 2];
-
-        let status = unsafe {
-            winreg::RegGetValueW(
-                self.0,
-                ptr::null_mut(),
-                name.as_ptr(),
-                winreg::RRF_RT_REG_SZ,
-                ptr::null_mut(),
-                v.as_mut_ptr() as *mut _,
-                &mut len,
-            )
-        };
-
-        if status != 0 {
-            return Err(io::Error::last_os_error());
-        }
-
-        Ok(Some(OsString::from_wide_null(&v)))
     }
 
     /// Set the given value.
@@ -102,7 +110,7 @@ impl RegistryKey {
                 self.0,
                 name.as_ptr(),
                 0,
-                winnt::REG_SZ,
+                winreg::REG_SZ,
                 value.as_ptr() as *const u8,
                 value_len,
             )

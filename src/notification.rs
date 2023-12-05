@@ -16,9 +16,9 @@ pub enum NotificationIcon {
 #[cfg(target_os = "windows")]
 impl NotificationIcon {
     /// Convert into a flag.
-    pub(super) fn into_flags(self) -> winapi::shared::minwindef::DWORD {
+    pub(super) fn into_flags(self) -> u32 {
         use self::NotificationIcon::*;
-        use winapi::um::shellapi;
+        use windows_sys::Win32::UI::Shell as shellapi;
 
         match self {
             Info => shellapi::NIIF_INFO,
