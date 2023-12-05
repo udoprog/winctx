@@ -16,9 +16,12 @@ impl AutoStart {
     /// The name should be something suitable for a registry key, like
     /// `OxidizeBot`.
     #[inline]
-    pub fn new<N>(name: N) -> Self where N: fmt::Display {
+    pub fn new<N>(name: N) -> Self
+    where
+        N: fmt::Display,
+    {
         Self {
-            name: name.to_string().into()
+            name: name.to_string().into(),
         }
     }
 }
