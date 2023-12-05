@@ -71,17 +71,15 @@ impl RegistryKey {
 
             let mut value = vec![0; len as usize / 2];
 
-            let status = unsafe {
-                winreg::RegGetValueW(
-                    self.0,
-                    ptr::null_mut(),
-                    name.as_ptr(),
-                    winreg::RRF_RT_REG_SZ,
-                    ptr::null_mut(),
-                    value.as_mut_ptr().cast(),
-                    len2.as_mut_ptr(),
-                )
-            };
+            let status = winreg::RegGetValueW(
+                self.0,
+                ptr::null_mut(),
+                name.as_ptr(),
+                winreg::RRF_RT_REG_SZ,
+                ptr::null_mut(),
+                value.as_mut_ptr().cast(),
+                len2.as_mut_ptr(),
+            );
 
             if status != 0 {
                 return Err(io::Error::last_os_error());
@@ -89,8 +87,8 @@ impl RegistryKey {
 
             let len2 = len2.assume_init();
 
-            debug_assert_eq!(len, len2 as usize / 2);
-            value.truncate(len2);
+            debug_assert_eq!(len, len2);
+            value.truncate(len2 as usize / 2);
             Ok(Some(OsString::from_wide_null(&value)))
         }
     }
@@ -101,9 +99,9 @@ impl RegistryKey {
 
         let name = name.to_wide_null();
         let value = value.to_wide_null();
-        let value_len: u32 = (value.len() * 2)
-            .try_into()
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "value too large"))?;
+
+        let value_len = u32::try_from((value.len() * 2))
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
         let status = unsafe {
             winreg::RegSetValueExW(
@@ -111,7 +109,7 @@ impl RegistryKey {
                 name.as_ptr(),
                 0,
                 winreg::REG_SZ,
-                value.as_ptr() as *const u8,
+                value.as_ptr().cast(),
                 value_len,
             )
         };
