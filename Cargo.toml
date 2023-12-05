@@ -1,0 +1,22 @@
+[package]
+name = "winctx"
+version = "0.0.2"
+authors = ["John-John Tedro <udoprog@tedro.se>"]
+edition = "2021"
+description = """
+A minimally viable Windows context for Rust.
+"""
+documentation = "https://docs.rs/winctx"
+readme = "README.md"
+homepage = "https://github.com/udoprog/winctx"
+repository = "https://github.com/udoprog/winctx"
+license = "MIT OR Apache-2.0"
+keywords = ["async", "windows"]
+categories = ["asynchronous"]
+
+[dependencies]
+tokio = { version = "1.34.0", features = ["sync", "macros"] }
+winapi = { version = "0.3.9", features = ["shellapi", "winerror", "winreg", "impl-default"] }
+
+[dev-dependencies]
+tokio = { version = "1.34.0", features = ["full"] }
