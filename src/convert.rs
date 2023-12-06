@@ -1,5 +1,8 @@
+use std::char::DecodeUtf16Error;
 use std::ffi::{OsStr, OsString};
-use std::os::windows::ffi::{OsStrExt as _, OsStringExt};
+use std::os::windows::ffi::{OsStrExt, OsStringExt};
+
+use crate::Result;
 
 pub(crate) trait ToWide {
     /// Encode into a wide string.
@@ -38,4 +41,37 @@ impl FromWide for OsString {
     fn from_wide(wide: &[u16]) -> OsString {
         OsStringExt::from_wide(wide)
     }
+}
+
+pub(super) fn encode_escaped_os_str(
+    out: &mut String,
+    input: &OsStr,
+) -> Result<(), DecodeUtf16Error> {
+    use std::char::decode_utf16;
+
+    'escape: {
+        for c in input.encode_wide() {
+            match c {
+                // ' '
+                0x00000020 => break 'escape,
+                _ => {}
+            }
+        }
+
+        // No escaping needed.
+        for c in decode_utf16(input.encode_wide()) {
+            out.push(c?);
+        }
+
+        return Ok(());
+    };
+
+    out.push('"');
+
+    for c in decode_utf16(input.encode_wide()) {
+        out.push(c?);
+    }
+
+    out.push('"');
+    Ok(())
 }

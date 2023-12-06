@@ -1,3 +1,4 @@
+use std::char::DecodeUtf16Error;
 use std::fmt;
 use std::io;
 
@@ -39,7 +40,8 @@ impl fmt::Display for Error {
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
             ErrorKind::CreateMutex(..) => write!(f, "Failed to construct mutex"),
             ErrorKind::MissingNotification => write!(f, "Missing notification state"),
-            ErrorKind::BadExecutable => write!(f, "Bad executable string"),
+            ErrorKind::BadAutoStartExecutable(..) => write!(f, "Bad autostart executable"),
+            ErrorKind::BadAutoStartArgument(..) => write!(f, "Bad autostart argument"),
             ErrorKind::WindowClosed => write!(f, "Window has been closed"),
             ErrorKind::WindowThreadPanicked => write!(f, "Window thread panicked"),
             ErrorKind::PostMessageDestroy => write!(f, "Failed to post destroy window message"),
@@ -61,6 +63,8 @@ impl std::error::Error for Error {
             ErrorKind::SetTooltip(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
             ErrorKind::CreateMutex(error) => Some(error),
+            ErrorKind::BadAutoStartExecutable(error) => Some(error),
+            ErrorKind::BadAutoStartArgument(error) => Some(error),
             _ => None,
         }
     }
@@ -80,7 +84,8 @@ pub(super) enum ErrorKind {
     SendNotification(io::Error),
     CreateMutex(io::Error),
     MissingNotification,
-    BadExecutable,
+    BadAutoStartExecutable(DecodeUtf16Error),
+    BadAutoStartArgument(DecodeUtf16Error),
     WindowClosed,
     WindowThreadPanicked,
     PostMessageDestroy,
