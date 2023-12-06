@@ -1,6 +1,5 @@
 use core::fmt;
 use std::io;
-use std::mem::transmute;
 use std::os::windows::io::{FromRawHandle, OwnedHandle};
 use std::ptr;
 
@@ -52,7 +51,7 @@ impl NamedMutex {
                 return Err(CreateMutex(io::Error::last_os_error()).into());
             }
 
-            let handle = OwnedHandle::from_raw_handle(transmute(handle));
+            let handle = OwnedHandle::from_raw_handle(handle as *mut _);
 
             if GetLastError() == ERROR_ALREADY_EXISTS {
                 return Ok(None);

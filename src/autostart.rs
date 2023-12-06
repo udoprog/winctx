@@ -66,7 +66,7 @@ impl AutoStart {
 
         for argument in &self.arguments {
             entry.push(' ');
-            encode_escaped_os_str(&mut entry, &argument).map_err(BadAutoStartArgument)?;
+            encode_escaped_os_str(&mut entry, argument).map_err(BadAutoStartArgument)?;
         }
 
         Ok(entry)

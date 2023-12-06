@@ -52,13 +52,10 @@ pub(super) fn encode_escaped_os_str(
     let mut escape = false;
 
     for c in input.encode_wide() {
-        match c {
-            // ' '
-            0x00000020 => {
-                escape = true;
-                break;
-            }
-            _ => {}
+        // ' '
+        if c == 0x00000020 {
+            escape = true;
+            break;
         }
     }
 

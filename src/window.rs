@@ -87,7 +87,7 @@ impl WindowInfo {
         nid.uFlags = shellapi::NIF_MESSAGE;
         nid.uCallbackMessage = ICON_MSG_ID;
 
-        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_ADD, &mut nid) };
+        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_ADD, &nid) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());
@@ -100,7 +100,7 @@ impl WindowInfo {
         let result = unsafe {
             let mut nid = self.new_nid();
             nid.uFlags = shellapi::NIF_ICON;
-            shellapi::Shell_NotifyIconW(shellapi::NIM_DELETE, &mut nid)
+            shellapi::Shell_NotifyIconW(shellapi::NIM_DELETE, &nid)
         };
 
         if result == FALSE {
@@ -361,7 +361,7 @@ impl Window {
         let mut nid = self.info.new_nid();
         copy_wstring(&mut nid.szTip, tooltip);
 
-        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &mut nid) };
+        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());
@@ -433,7 +433,7 @@ impl Window {
         nid.dwInfoFlags = n.icon.into_flags();
         nid.uCallbackMessage = token;
 
-        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &mut nid) };
+        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());
@@ -491,7 +491,7 @@ impl Window {
             nid.uFlags = shellapi::NIF_ICON;
             nid.hIcon = icon;
 
-            shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &mut nid)
+            shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid)
         };
 
         if result == FALSE {
