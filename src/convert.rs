@@ -49,29 +49,33 @@ pub(super) fn encode_escaped_os_str(
 ) -> Result<(), DecodeUtf16Error> {
     use std::char::decode_utf16;
 
-    'escape: {
-        for c in input.encode_wide() {
-            match c {
-                // ' '
-                0x00000020 => break 'escape,
-                _ => {}
-            }
-        }
+    let mut escape = false;
 
-        // No escaping needed.
+    for c in input.encode_wide() {
+        match c {
+            // ' '
+            0x00000020 => {
+                escape = true;
+                break;
+            }
+            _ => {}
+        }
+    }
+
+    if escape {
+        out.push('"');
+
         for c in decode_utf16(input.encode_wide()) {
             out.push(c?);
         }
 
-        return Ok(());
-    };
-
-    out.push('"');
-
-    for c in decode_utf16(input.encode_wide()) {
-        out.push(c?);
+        out.push('"');
+    } else {
+        // No escaping needed.
+        for c in decode_utf16(input.encode_wide()) {
+            out.push(c?);
+        }
     }
 
-    out.push('"');
     Ok(())
 }
