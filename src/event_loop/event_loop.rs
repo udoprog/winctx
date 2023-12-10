@@ -4,12 +4,11 @@ use tokio::sync::mpsc;
 
 use crate::error::Error;
 use crate::error::ErrorKind::*;
-use crate::window::{Window, WindowEvent};
+use crate::window::{Icon, Window, WindowEvent};
 use crate::Notification;
 use crate::Result;
 
 use super::{Event, InputEvent, Token};
-use crate::context_builder::Icon;
 
 /// The event loop being run.
 pub struct EventLoop {
@@ -65,14 +64,14 @@ impl EventLoop {
                             self.window.set_tooltip("").map_err(SetTooltip)?;
 
                             if let Some(icon) = &self.icon {
-                                self.window.set_icon_from_buffer(&icon.buffer, icon.width, icon.height).map_err(SetIcon)?;
+                                self.window.set_icon(icon.clone()).map_err(SetIcon)?;
                             }
                         }
                         InputEvent::Errored(message) => {
                             self.window.set_tooltip(&message).map_err(SetTooltip)?;
 
                             if let Some(icon) = &self.icon_error {
-                                self.window.set_icon_from_buffer(&icon.buffer, icon.width, icon.height).map_err(SetIcon)?;
+                                self.window.set_icon(icon.clone()).map_err(SetIcon)?;
                             }
                         }
                         InputEvent::Notification(id, n) => {

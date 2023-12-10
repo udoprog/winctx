@@ -13,13 +13,15 @@ use windows_sys::Win32::Foundation::{FALSE, HWND, LPARAM, LRESULT, TRUE, WPARAM}
 use windows_sys::Win32::Graphics::Gdi::HBRUSH;
 use windows_sys::Win32::UI::Shell as shellapi;
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
-use windows_sys::Win32::UI::WindowsAndMessaging::{HICON, HMENU};
+use windows_sys::Win32::UI::WindowsAndMessaging::HMENU;
 
 use crate::convert::ToWide;
 use crate::error::Error;
 use crate::error::ErrorKind::*;
 use crate::notification::NotificationIcon;
 use crate::{Notification, Result};
+
+use super::Icon;
 
 const ICON_MSG_ID: u32 = winuser::WM_USER + 1;
 
@@ -263,6 +265,7 @@ pub(crate) struct Window {
     info: WindowInfo,
     events_rx: mpsc::UnboundedReceiver<WindowEvent>,
     thread: Option<thread::JoinHandle<()>>,
+    icon: Option<Icon>,
 }
 
 impl Window {
@@ -327,6 +330,7 @@ impl Window {
             info,
             events_rx,
             thread: Some(thread),
+            icon: None,
         };
 
         Ok(w)
@@ -338,7 +342,7 @@ impl Window {
     }
 
     /// Test if the window has been closed.
-    pub(super) fn is_closed(&self) -> bool {
+    pub(crate) fn is_closed(&self) -> bool {
         self.thread.is_none()
     }
 
@@ -391,7 +395,7 @@ impl Window {
             item.fState = winuser::MFS_DEFAULT;
         }
 
-        let result = unsafe { winuser::InsertMenuItemW(self.info.hmenu, item_idx, 1, &item) };
+        let result = unsafe { winuser::InsertMenuItemW(self.info.hmenu, item_idx, TRUE, &item) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());
@@ -452,55 +456,12 @@ impl Window {
         Ok(())
     }
 
-    /// Set an icon from a buffer.
-    pub(crate) fn set_icon_from_buffer(
-        &self,
-        buffer: &[u8],
-        width: u32,
-        height: u32,
-    ) -> io::Result<()> {
-        let offset = unsafe {
-            winuser::LookupIconIdFromDirectoryEx(
-                buffer.as_ptr(),
-                TRUE,
-                width as i32,
-                height as i32,
-                winuser::LR_DEFAULTCOLOR,
-            )
-        };
-
-        if offset == 0 {
-            return Err(io::Error::last_os_error());
-        }
-
-        let icon_data = &buffer[offset as usize..];
-
-        let hicon = unsafe {
-            winuser::CreateIconFromResourceEx(
-                icon_data.as_ptr(),
-                icon_data.len() as u32,
-                TRUE,
-                0x30000,
-                width as i32,
-                height as i32,
-                winuser::LR_DEFAULTCOLOR,
-            )
-        };
-
-        if hicon == 0 {
-            return Err(io::Error::last_os_error());
-        }
-
-        self.set_icon(hicon)
-    }
-
-    /// Internal call to set icon.
-    fn set_icon(&self, icon: HICON) -> io::Result<()> {
+    /// Set context icon.
+    pub(crate) fn set_icon(&mut self, icon: Icon) -> io::Result<()> {
         let result = unsafe {
             let mut nid = self.info.new_nid();
             nid.uFlags = shellapi::NIF_ICON;
-            nid.hIcon = icon;
-
+            nid.hIcon = icon.as_raw_handle();
             shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid)
         };
 
@@ -508,6 +469,7 @@ impl Window {
             return Err(io::Error::last_os_error());
         }
 
+        self.icon = Some(icon);
         Ok(())
     }
 }

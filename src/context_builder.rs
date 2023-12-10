@@ -5,6 +5,7 @@ use tokio::sync::mpsc;
 use crate::error::ErrorKind::*;
 use crate::error::SetupMenuError;
 use crate::menu_item::{MenuItem, MenuItemKind};
+use crate::window;
 use crate::window::Window;
 use crate::Result;
 use crate::{EventLoop, Sender, Token};
@@ -87,15 +88,29 @@ impl ContextBuilder {
             .await
             .map_err(WindowSetup)?;
 
-        if let Some(icon) = &self.icon {
-            window
-                .set_icon_from_buffer(&icon.buffer, icon.width, icon.height)
-                .map_err(SetIcon)?;
-        }
-
         self.setup_menu(&mut window).map_err(SetupMenu)?;
 
-        let event_loop = EventLoop::new(self.icon, self.error_icon, events_rx, window);
+        let icon = match self.icon {
+            Some(icon) => Some(
+                window::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+                    .map_err(BuildIcon)?,
+            ),
+            None => None,
+        };
+
+        if let Some(icon) = &icon {
+            window.set_icon(icon.clone()).map_err(SetIcon)?;
+        }
+
+        let error_icon = match self.error_icon {
+            Some(icon) => Some(
+                window::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+                    .map_err(BuildErrorIcon)?,
+            ),
+            None => None,
+        };
+
+        let event_loop = EventLoop::new(icon, error_icon, events_rx, window);
         let system = Sender::new(events_tx);
         Ok((system, event_loop))
     }
