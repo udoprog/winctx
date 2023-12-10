@@ -57,7 +57,7 @@ impl WindowBuilder {
 
     /// Add a context menu separator.
     pub fn add_menu_separator(&mut self) -> Token {
-        let token = Token(self.menu.len() as u32);
+        let token = Token::new(self.menu.len() as u32);
         self.menu.push(MenuItem::Separator);
         token
     }

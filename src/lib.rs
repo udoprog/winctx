@@ -106,6 +106,9 @@ mod notification;
 pub use self::error::Error;
 mod error;
 
+pub use self::token::Token;
+mod token;
+
 pub use self::event_loop::{Event, EventLoop, Sender, WindowBuilder};
 mod event_loop;
 
@@ -119,3 +122,7 @@ mod named_mutex;
 
 /// Result alias for winctx.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+#[cfg_attr(windows, path = "windows/real.rs")]
+#[cfg_attr(not(windows), path = "windows/fake.rs")]
+mod windows;

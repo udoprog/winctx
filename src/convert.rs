@@ -1,7 +1,8 @@
+use std::char::decode_utf16;
 use std::char::DecodeUtf16Error;
 use std::ffi::{OsStr, OsString};
-use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
+use crate::windows::{OsStrExt, OsStringExt};
 use crate::Result;
 
 pub(crate) trait ToWide {
@@ -16,10 +17,12 @@ impl<T> ToWide for T
 where
     T: AsRef<OsStr>,
 {
+    #[inline]
     fn to_wide(&self) -> Vec<u16> {
         self.as_ref().encode_wide().collect()
     }
 
+    #[inline]
     fn to_wide_null(&self) -> Vec<u16> {
         self.as_ref().encode_wide().chain(Some(0)).collect()
     }
@@ -37,7 +40,7 @@ where
     }
 }
 
-impl FromWide for OsString {
+impl FromWide for std::ffi::OsString {
     fn from_wide(wide: &[u16]) -> OsString {
         OsStringExt::from_wide(wide)
     }
@@ -47,8 +50,6 @@ pub(super) fn encode_escaped_os_str(
     out: &mut String,
     input: &OsStr,
 ) -> Result<(), DecodeUtf16Error> {
-    use std::char::decode_utf16;
-
     let mut escape = false;
 
     for c in input.encode_wide() {

@@ -12,22 +12,6 @@ pub enum NotificationIcon {
     Error,
 }
 
-// Windows-specific implementation details.
-#[cfg(target_os = "windows")]
-impl NotificationIcon {
-    /// Convert into a flag.
-    pub(super) fn into_flags(self) -> u32 {
-        use self::NotificationIcon::*;
-        use windows_sys::Win32::UI::Shell as shellapi;
-
-        match self {
-            Info => shellapi::NIIF_INFO,
-            Error => shellapi::NIIF_ERROR,
-            Warning => shellapi::NIIF_WARNING,
-        }
-    }
-}
-
 /// A single notification.
 pub struct Notification {
     pub(super) message: String,

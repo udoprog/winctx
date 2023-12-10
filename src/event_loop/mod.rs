@@ -9,15 +9,7 @@ use self::window_builder::Icon;
 pub use self::window_builder::WindowBuilder;
 mod window_builder;
 
-/// A token provided to callbacks to indicate what has been interacted with.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Token(u32);
-
-impl Token {
-    fn new(id: u32) -> Self {
-        Self(id)
-    }
-}
+use crate::token::Token;
 
 /// An event emitted by the event loop.
 #[non_exhaustive]

@@ -1,6 +1,5 @@
 use core::fmt;
 use std::io;
-use std::os::windows::io::{FromRawHandle, OwnedHandle};
 use std::ptr;
 
 use windows_core::PCWSTR;
@@ -9,6 +8,7 @@ use windows_sys::Win32::System::Threading::CreateMutexW;
 
 use crate::convert::ToWide;
 use crate::error::ErrorKind::*;
+use crate::windows::{FromRawHandle, OwnedHandle};
 use crate::Result;
 
 /// A named exclusive mutex that can be used to ensure that only one instance of
