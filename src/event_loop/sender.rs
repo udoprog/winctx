@@ -10,7 +10,7 @@ use crate::Notification;
 use super::Token;
 
 #[derive(Debug)]
-pub(super) enum InputEvent {
+pub(crate) enum InputEvent {
     Shutdown,
     Cleared,
     Errored(String),
@@ -29,7 +29,7 @@ pub struct Sender {
 }
 
 impl Sender {
-    pub(super) fn new(tx: mpsc::UnboundedSender<InputEvent>) -> Self {
+    pub(crate) fn new(tx: mpsc::UnboundedSender<InputEvent>) -> Self {
         Self {
             inner: Arc::new(Inner {
                 notifications: AtomicU32::new(0),

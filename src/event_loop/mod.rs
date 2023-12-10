@@ -5,10 +5,6 @@ mod sender;
 pub use self::event_loop::EventLoop;
 mod event_loop;
 
-use self::window_builder::Icon;
-pub use self::window_builder::WindowBuilder;
-mod window_builder;
-
 use crate::token::Token;
 
 /// An event emitted by the event loop.

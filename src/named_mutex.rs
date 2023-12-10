@@ -13,6 +13,17 @@ use crate::Result;
 
 /// A named exclusive mutex that can be used to ensure that only one instance of
 /// an application is running.
+///
+/// # Examples
+///
+/// ```no_run
+/// use winctx::NamedMutex;
+///
+/// if let Some(_m) = NamedMutex::create_acquired("se.tedro.Example")? {
+///     // The only one holding the mutex.
+/// }
+/// # Ok::<_, winctx::Error>(())
+/// ```
 pub struct NamedMutex {
     _handle: OwnedHandle,
 }

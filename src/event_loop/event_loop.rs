@@ -8,7 +8,8 @@ use crate::window::{Window, WindowEvent};
 use crate::Notification;
 use crate::Result;
 
-use super::{Event, Icon, InputEvent, Token};
+use super::{Event, InputEvent, Token};
+use crate::context_builder::Icon;
 
 /// The event loop being run.
 pub struct EventLoop {
@@ -21,7 +22,7 @@ pub struct EventLoop {
 }
 
 impl EventLoop {
-    pub(super) fn new(
+    pub(crate) fn new(
         icon: Option<Icon>,
         icon_error: Option<Icon>,
         events_rx: mpsc::UnboundedReceiver<InputEvent>,

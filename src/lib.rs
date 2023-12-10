@@ -21,21 +21,21 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, Notification, WindowBuilder};
+//! use winctx::{Event, Notification, ContextBuilder, MenuItem};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
 //!
 //! #[tokio::main]
 //! async fn main() -> winctx::Result<()> {
-//!     let mut builder = WindowBuilder::new("Example Application");
+//!     let mut builder = ContextBuilder::new("Example Application");
 //!     builder.set_icon(ICON, 22, 22);
 //!
-//!     builder.add_menu_entry("Hello World", true);
-//!     let notification = builder.add_menu_entry("Show notification", false);
-//!     let notification_multiple = builder.add_menu_entry("Show multiple notifications", false);
-//!     builder.add_menu_separator();
-//!     let quit = builder.add_menu_entry("Quit", false);
+//!     builder.push_menu_item(MenuItem::entry("Hello World", true));
+//!     let notification = builder.push_menu_item(MenuItem::entry("Show notification", false));
+//!     let notification_multiple = builder.push_menu_item(MenuItem::entry("Show multiple notifications", false));
+//!     builder.push_menu_item(MenuItem::separator());
+//!     let quit = builder.push_menu_item(MenuItem::entry("Quit", false));
 //!
 //!     let (sender, mut event_loop) = builder.build().await?;
 //!
@@ -109,8 +109,11 @@ mod error;
 pub use self::token::Token;
 mod token;
 
-pub use self::event_loop::{Event, EventLoop, Sender, WindowBuilder};
+pub use self::event_loop::{Event, EventLoop, Sender};
 mod event_loop;
+
+pub use self::context_builder::ContextBuilder;
+mod context_builder;
 
 pub use self::autostart::AutoStart;
 mod autostart;
@@ -119,6 +122,9 @@ pub mod tools;
 
 pub use self::named_mutex::NamedMutex;
 mod named_mutex;
+
+pub use self::menu_item::MenuItem;
+pub(crate) mod menu_item;
 
 /// Result alias for winctx.
 pub type Result<T, E = Error> = core::result::Result<T, E>;

@@ -1,20 +1,21 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, Notification, WindowBuilder};
+use winctx::{ContextBuilder, Event, MenuItem, Notification};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder = WindowBuilder::new("Example Application");
+    let mut builder = ContextBuilder::new("Example Application");
     builder.set_icon(ICON, 22, 22);
 
-    builder.add_menu_entry("Hello World", true);
-    let notification = builder.add_menu_entry("Show notification", false);
-    let notification_multiple = builder.add_menu_entry("Show multiple notifications", false);
-    builder.add_menu_separator();
-    let quit = builder.add_menu_entry("Quit", false);
+    builder.push_menu_item(MenuItem::entry("Hello World", true));
+    let notification = builder.push_menu_item(MenuItem::entry("Show notification", false));
+    let notification_multiple =
+        builder.push_menu_item(MenuItem::entry("Show multiple notifications", false));
+    builder.push_menu_item(MenuItem::separator());
+    let quit = builder.push_menu_item(MenuItem::entry("Quit", false));
 
     let (sender, mut event_loop) = builder.build().await?;
 

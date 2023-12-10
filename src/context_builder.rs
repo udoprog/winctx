@@ -4,10 +4,10 @@ use tokio::sync::mpsc;
 
 use crate::error::ErrorKind::*;
 use crate::error::SetupMenuError;
+use crate::menu_item::{MenuItem, MenuItemKind};
 use crate::window::Window;
 use crate::Result;
-
-use super::{EventLoop, Sender, Token};
+use crate::{EventLoop, Sender, Token};
 
 pub(super) struct Icon {
     pub(super) buffer: Box<[u8]>,
@@ -15,13 +15,8 @@ pub(super) struct Icon {
     pub(super) height: u32,
 }
 
-pub enum MenuItem {
-    Separator,
-    MenyEntry { text: String, default: bool },
-}
-
-/// An event loop builder.
-pub struct WindowBuilder {
+/// The builder of a windows context.
+pub struct ContextBuilder {
     name: String,
     menu: Vec<MenuItem>,
     class_name: Option<String>,
@@ -29,7 +24,7 @@ pub struct WindowBuilder {
     error_icon: Option<Icon>,
 }
 
-impl WindowBuilder {
+impl ContextBuilder {
     /// Construct a new event loop where the application has the specified name.
     pub fn new<N>(name: N) -> Self
     where
@@ -55,25 +50,10 @@ impl WindowBuilder {
         }
     }
 
-    /// Add a context menu separator.
-    pub fn add_menu_separator(&mut self) -> Token {
+    /// Add a new menu item.
+    pub fn push_menu_item(&mut self, menu_item: MenuItem) -> Token {
         let token = Token::new(self.menu.len() as u32);
-        self.menu.push(MenuItem::Separator);
-        token
-    }
-
-    /// Add a context menu separator.
-    pub fn add_menu_entry<T>(&mut self, text: T, default: bool) -> Token
-    where
-        T: fmt::Display,
-    {
-        let token = Token::new(self.menu.len() as u32);
-
-        self.menu.push(MenuItem::MenyEntry {
-            text: text.to_string(),
-            default,
-        });
-
+        self.menu.push(menu_item);
         token
     }
 
@@ -124,13 +104,13 @@ impl WindowBuilder {
         for (index, item) in self.menu.iter().enumerate() {
             debug_assert!(u32::try_from(index).is_ok());
 
-            match item {
-                MenuItem::Separator => {
+            match &item.kind {
+                MenuItemKind::Separator => {
                     window
                         .add_menu_separator(index as u32)
                         .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
                 }
-                MenuItem::MenyEntry { text, default } => {
+                MenuItemKind::MenyEntry { text, default } => {
                     window
                         .add_menu_entry(index as u32, text.as_str(), *default)
                         .map_err(|e| SetupMenuError::AddMenuEntry(index, e))?;
