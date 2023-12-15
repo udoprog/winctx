@@ -97,7 +97,10 @@
 #![deny(missing_docs)]
 
 mod convert;
+
+pub use self::registry::{OpenRegistryKey, RegistryKey};
 mod registry;
+
 mod window;
 
 pub use self::notification::Notification;

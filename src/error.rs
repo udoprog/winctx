@@ -30,7 +30,6 @@ impl fmt::Display for Error {
         match &self.kind {
             ErrorKind::WindowSetup(..) => write!(f, "Failed to set up window"),
             ErrorKind::DeleteRegistryKey(..) => write!(f, "Failed to delete registry key"),
-            ErrorKind::GetRegistryKey(..) => write!(f, "Failed to get registry key"),
             ErrorKind::GetRegistryValue(..) => write!(f, "Failed to get registry value"),
             ErrorKind::SetRegistryKey(..) => write!(f, "Failed to set registry key"),
             ErrorKind::CurrentExecutable(..) => write!(f, "Could not get current executable"),
@@ -41,6 +40,7 @@ impl fmt::Display for Error {
             ErrorKind::SetTooltip(..) => write!(f, "Failed to set tooltip message"),
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
             ErrorKind::CreateMutex(..) => write!(f, "Failed to construct mutex"),
+            ErrorKind::OpenRegistryKey(..) => write!(f, "Failed to open registry key"),
             ErrorKind::MissingNotification => write!(f, "Missing notification state"),
             ErrorKind::BadAutoStartExecutable(..) => write!(f, "Bad autostart executable"),
             ErrorKind::BadAutoStartArgument(..) => write!(f, "Bad autostart argument"),
@@ -56,7 +56,6 @@ impl std::error::Error for Error {
         match &self.kind {
             ErrorKind::WindowSetup(error) => Some(error),
             ErrorKind::DeleteRegistryKey(error) => Some(error),
-            ErrorKind::GetRegistryKey(error) => Some(error),
             ErrorKind::GetRegistryValue(error) => Some(error),
             ErrorKind::SetRegistryKey(error) => Some(error),
             ErrorKind::CurrentExecutable(error) => Some(error),
@@ -67,6 +66,7 @@ impl std::error::Error for Error {
             ErrorKind::SetTooltip(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
             ErrorKind::CreateMutex(error) => Some(error),
+            ErrorKind::OpenRegistryKey(error) => Some(error),
             ErrorKind::BadAutoStartExecutable(error) => Some(error),
             ErrorKind::BadAutoStartArgument(error) => Some(error),
             _ => None,
@@ -78,7 +78,6 @@ impl std::error::Error for Error {
 pub(super) enum ErrorKind {
     WindowSetup(io::Error),
     DeleteRegistryKey(io::Error),
-    GetRegistryKey(io::Error),
     GetRegistryValue(io::Error),
     SetRegistryKey(io::Error),
     CurrentExecutable(io::Error),
@@ -89,6 +88,7 @@ pub(super) enum ErrorKind {
     SetTooltip(io::Error),
     SendNotification(io::Error),
     CreateMutex(io::Error),
+    OpenRegistryKey(io::Error),
     MissingNotification,
     BadAutoStartExecutable(DecodeUtf16Error),
     BadAutoStartArgument(DecodeUtf16Error),

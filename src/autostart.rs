@@ -1,17 +1,18 @@
 use std::env::current_exe;
 use std::ffi::{OsStr, OsString};
-use std::fmt;
+use std::io;
 use std::path::Path;
 
 use crate::convert::encode_escaped_os_str;
+use crate::error::Error;
 use crate::error::ErrorKind::*;
-use crate::registry::RegistryKey;
+use crate::registry::OpenRegistryKey;
 use crate::Result;
 
 /// Helper to register and qeury for a binary to autostart.
 #[non_exhaustive]
 pub struct AutoStart {
-    name: Box<str>,
+    name: Box<OsStr>,
     executable: Box<Path>,
     arguments: Vec<OsString>,
 }
@@ -20,7 +21,7 @@ impl AutoStart {
     /// Helper to make the current executable automatically start.
     pub fn current_exe<N>(name: N) -> Result<Self>
     where
-        N: fmt::Display,
+        N: AsRef<OsStr>,
     {
         let executable = current_exe().map_err(CurrentExecutable)?;
         Ok(Self::new(name, executable))
@@ -33,11 +34,11 @@ impl AutoStart {
     #[inline]
     pub fn new<N, E>(name: N, executable: E) -> Self
     where
-        N: fmt::Display,
+        N: AsRef<OsStr>,
         E: AsRef<Path>,
     {
         Self {
-            name: name.to_string().into(),
+            name: name.as_ref().into(),
             executable: executable.as_ref().into(),
             arguments: Vec::new(),
         }
@@ -74,12 +75,14 @@ impl AutoStart {
 
     /// If the program is installed to run at startup.
     pub fn is_installed(&self) -> Result<bool> {
-        let key = RegistryKey::current_user("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
-            .map_err(GetRegistryKey)?;
+        let key = OpenRegistryKey::current_user()
+            .open("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
+            .map_err(OpenRegistryKey)?;
 
-        let path = match key.get(&self.name).map_err(GetRegistryValue)? {
-            Some(path) => path,
-            None => return Ok(false),
+        let path = match key.get_string(&self.name) {
+            Ok(path) => path,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(false),
+            Err(e) => return Err(Error::new(GetRegistryValue(e))),
         };
 
         Ok(self.registry_entry()?.as_str() == path)
@@ -87,9 +90,10 @@ impl AutoStart {
 
     /// Install the current executable to be automatically started.
     pub fn install(&self) -> Result<()> {
-        let key = RegistryKey::current_user("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
-            .map_err(GetRegistryKey)?;
-
+        let key = OpenRegistryKey::current_user()
+            .set_value()
+            .open("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
+            .map_err(OpenRegistryKey)?;
         key.set(&self.name, self.registry_entry()?)
             .map_err(SetRegistryKey)?;
         Ok(())
@@ -97,9 +101,10 @@ impl AutoStart {
 
     /// Remove the program from automatic startup.
     pub fn uninstall(&self) -> Result<()> {
-        let key = RegistryKey::current_user("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
-            .map_err(GetRegistryKey)?;
-
+        let key = OpenRegistryKey::current_user()
+            .set_value()
+            .open("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
+            .map_err(OpenRegistryKey)?;
         key.delete(&self.name).map_err(DeleteRegistryKey)?;
         Ok(())
     }
