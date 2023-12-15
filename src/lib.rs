@@ -8,7 +8,7 @@
 //! * Register and use a context menu, the icons you see in the bottom right for
 //!   running applications.
 //! * Send notifcations, or balloons as Windows call them.
-//! * Receive messages (TODO).
+//! * Monitor the clipboard for changes.
 //!
 //! Note that crate is fairly opinionated, not everything that is possible
 //! through the underlying APIs will be exposed.
@@ -96,6 +96,7 @@
 #![allow(clippy::module_inception)]
 #![deny(missing_docs)]
 
+mod clipboard;
 mod convert;
 
 pub use self::registry::{OpenRegistryKey, RegistryKey};
@@ -112,7 +113,7 @@ mod error;
 pub use self::token::Token;
 mod token;
 
-pub use self::event_loop::{Event, EventLoop, Sender};
+pub use self::event_loop::{ClipboardEvent, Event, EventLoop, Sender};
 mod event_loop;
 
 pub use self::context_builder::ContextBuilder;

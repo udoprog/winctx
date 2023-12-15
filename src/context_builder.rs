@@ -23,6 +23,7 @@ pub struct ContextBuilder {
     class_name: Option<String>,
     icon: Option<Icon>,
     error_icon: Option<Icon>,
+    clipboard_events: bool,
 }
 
 impl ContextBuilder {
@@ -37,6 +38,23 @@ impl ContextBuilder {
             class_name: None,
             icon: None,
             error_icon: None,
+            clipboard_events: false,
+        }
+    }
+
+    /// Indicates whether we should monitor the system clipboard for changes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::ContextBuilder;
+    ///
+    /// let mut builder = ContextBuilder::new("Example Application").with_clipboard_events(true);
+    /// ```
+    pub fn with_clipboard_events(self, clipboard_events: bool) -> Self {
+        Self {
+            clipboard_events,
+            ..self
         }
     }
 
@@ -84,7 +102,7 @@ impl ContextBuilder {
 
         let class_name = self.class_name.as_deref().unwrap_or(self.name.as_str());
 
-        let mut window = Window::new(class_name, &self.name)
+        let mut window = Window::new(class_name, &self.name, self.clipboard_events)
             .await
             .map_err(WindowSetup)?;
 

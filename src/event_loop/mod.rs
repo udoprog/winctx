@@ -5,17 +5,5 @@ mod sender;
 pub use self::event_loop::EventLoop;
 mod event_loop;
 
-use crate::token::Token;
-
-/// An event emitted by the event loop.
-#[non_exhaustive]
-pub enum Event {
-    /// The menu item identified by [`Token`] has been clicked.
-    MenuEntryClicked(Token),
-    /// Indicates that the notification with the associated token has been clicked.
-    NotificationClicked(Token),
-    /// The notification associated with the given token either timed out or was dismissed.
-    NotificationDismissed(Token),
-    /// Window has been shut down.
-    Shutdown,
-}
+pub use self::event::{ClipboardEvent, Event};
+mod event;

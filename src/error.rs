@@ -29,6 +29,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             ErrorKind::WindowSetup(..) => write!(f, "Failed to set up window"),
+            ErrorKind::WindowError(..) => write!(f, "Error in window thread"),
             ErrorKind::DeleteRegistryKey(..) => write!(f, "Failed to delete registry key"),
             ErrorKind::GetRegistryValue(..) => write!(f, "Failed to get registry value"),
             ErrorKind::SetRegistryKey(..) => write!(f, "Failed to set registry key"),
@@ -45,7 +46,6 @@ impl fmt::Display for Error {
             ErrorKind::BadAutoStartExecutable(..) => write!(f, "Bad autostart executable"),
             ErrorKind::BadAutoStartArgument(..) => write!(f, "Bad autostart argument"),
             ErrorKind::WindowClosed => write!(f, "Window has been closed"),
-            ErrorKind::WindowThreadPanicked => write!(f, "Window thread panicked"),
             ErrorKind::PostMessageDestroy => write!(f, "Failed to post destroy window message"),
         }
     }
@@ -55,6 +55,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.kind {
             ErrorKind::WindowSetup(error) => Some(error),
+            ErrorKind::WindowError(error) => Some(error),
             ErrorKind::DeleteRegistryKey(error) => Some(error),
             ErrorKind::GetRegistryValue(error) => Some(error),
             ErrorKind::SetRegistryKey(error) => Some(error),
@@ -75,8 +76,53 @@ impl std::error::Error for Error {
 }
 
 #[derive(Debug)]
+pub(super) enum WindowError {
+    Init(io::Error),
+    DeleteIcon(io::Error),
+    AddClipboardFormatListener(io::Error),
+    OpenClipboard(io::Error),
+    GetClipboardData(io::Error),
+    LockClipboardData(io::Error),
+    ThreadPanicked,
+    ThreadExited,
+}
+
+impl fmt::Display for WindowError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WindowError::Init(..) => write!(f, "Failed to initialize window"),
+            WindowError::DeleteIcon(..) => write!(f, "Failed to delete icon"),
+            WindowError::AddClipboardFormatListener(..) => {
+                write!(f, "Failed to add clipboard format listener")
+            }
+            WindowError::OpenClipboard(..) => write!(f, "Failed to open clipboard"),
+            WindowError::GetClipboardData(..) => write!(f, "Failed to get clipboard data"),
+            WindowError::LockClipboardData(..) => write!(f, "Failed to lock clipboard data"),
+            WindowError::ThreadPanicked => write!(f, "Window thread panicked"),
+            WindowError::ThreadExited => write!(f, "Window thread unexpectedly exited"),
+        }
+    }
+}
+
+impl std::error::Error for WindowError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            WindowError::Init(error) => Some(error),
+            WindowError::DeleteIcon(error) => Some(error),
+            WindowError::AddClipboardFormatListener(error) => Some(error),
+            WindowError::OpenClipboard(error) => Some(error),
+            WindowError::GetClipboardData(error) => Some(error),
+            WindowError::LockClipboardData(error) => Some(error),
+            WindowError::ThreadPanicked => None,
+            WindowError::ThreadExited => None,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(super) enum ErrorKind {
-    WindowSetup(io::Error),
+    WindowSetup(WindowError),
+    WindowError(WindowError),
     DeleteRegistryKey(io::Error),
     GetRegistryValue(io::Error),
     SetRegistryKey(io::Error),
@@ -93,7 +139,6 @@ pub(super) enum ErrorKind {
     BadAutoStartExecutable(DecodeUtf16Error),
     BadAutoStartArgument(DecodeUtf16Error),
     WindowClosed,
-    WindowThreadPanicked,
     PostMessageDestroy,
 }
 

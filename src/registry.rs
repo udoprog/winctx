@@ -101,8 +101,7 @@ impl RegistryKey {
     }
 
     fn get_wide(&self, name: &[u16], flags: u32) -> io::Result<Vec<u16>> {
-        let mut len = MaybeUninit::uninit();
-        let mut len2 = MaybeUninit::uninit();
+        let mut len = 0;
 
         unsafe {
             let status = winreg::RegGetValueW(
@@ -112,15 +111,14 @@ impl RegistryKey {
                 flags,
                 ptr::null_mut(),
                 ptr::null_mut(),
-                len.as_mut_ptr(),
+                &mut len,
             );
 
             if status != ERROR_SUCCESS {
                 return Err(io::Error::from_raw_os_error(status as i32));
             }
 
-            let len = len.assume_init();
-
+            debug_assert!(len % 2 == 0);
             let mut value = vec![0u16; (len / 2) as usize];
 
             let status = winreg::RegGetValueW(
@@ -130,19 +128,17 @@ impl RegistryKey {
                 flags,
                 ptr::null_mut(),
                 value.as_mut_ptr().cast(),
-                len2.as_mut_ptr(),
+                &mut len,
             );
 
             if status != ERROR_SUCCESS {
                 return Err(io::Error::from_raw_os_error(status as i32));
             }
 
-            let len2 = len2.assume_init();
-
-            debug_assert!(len2 % 2 == 0);
+            debug_assert!(len % 2 == 0);
 
             // Length reported *including* wide null terminator.
-            value.truncate((len2 / 2) as usize);
+            value.truncate((len / 2) as usize);
             Ok(value)
         }
     }

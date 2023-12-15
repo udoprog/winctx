@@ -29,8 +29,12 @@ features = [
     "Win32_Graphics_Gdi",
     "Win32_UI_Shell",
     "Win32_System_Registry",
+    "Win32_System_DataExchange",
+    "Win32_System_Ole",
+    "Win32_System_Memory",
 ]
 
 [dev-dependencies]
 anyhow = "1.0.75"
+image = "0.24.7"
 tokio = { version = "1.34.0", features = ["full"] }

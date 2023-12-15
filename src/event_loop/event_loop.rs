@@ -4,11 +4,12 @@ use tokio::sync::mpsc;
 
 use crate::error::Error;
 use crate::error::ErrorKind::*;
+use crate::token::Token;
 use crate::window::{Icon, Window, WindowEvent};
 use crate::Notification;
 use crate::Result;
 
-use super::{Event, InputEvent, Token};
+use super::{Event, InputEvent};
 
 /// The event loop being run.
 pub struct EventLoop {
@@ -96,6 +97,9 @@ impl EventLoop {
                         WindowEvent::Shutdown => {
                             self.window.join()?;
                             return Ok(Event::Shutdown);
+                        }
+                        WindowEvent::Clipboard(clipboard_event) => {
+                            return Ok(Event::Clipboard(clipboard_event));
                         }
                         WindowEvent::BalloonClicked => {
                             let current = self.take_notification()?;

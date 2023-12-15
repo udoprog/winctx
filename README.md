@@ -11,7 +11,7 @@ This allows non-gui applications to:
 * Register and use a context menu, the icons you see in the bottom right for
   running applications.
 * Send notifcations, or balloons as Windows call them.
-* Receive messages (TODO).
+* Monitor the clipboard for changes.
 
 Note that crate is fairly opinionated, not everything that is possible
 through the underlying APIs will be exposed.

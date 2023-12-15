@@ -5,9 +5,7 @@ use tokio::sync::mpsc;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use crate::Notification;
-
-use super::Token;
+use crate::{Notification, Token};
 
 #[derive(Debug)]
 pub(crate) enum InputEvent {
