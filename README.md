@@ -64,7 +64,7 @@ async fn main() -> winctx::Result<()> {
 
                 if token == notification {
                     sender.notification(
-                        Notification::new("And this is a body").with_title("This is a title"),
+                        Notification::new("And this is a body").title("This is a title"),
                     );
                     continue;
                 }

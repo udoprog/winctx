@@ -49,9 +49,10 @@ impl ContextBuilder {
     /// ```
     /// use winctx::ContextBuilder;
     ///
-    /// let mut builder = ContextBuilder::new("Example Application").with_clipboard_events(true);
+    /// let mut builder = ContextBuilder::new("Example Application")
+    ///     .clipboard_events(true);
     /// ```
-    pub fn with_clipboard_events(self, clipboard_events: bool) -> Self {
+    pub fn clipboard_events(self, clipboard_events: bool) -> Self {
         Self {
             clipboard_events,
             ..self
@@ -59,7 +60,16 @@ impl ContextBuilder {
     }
 
     /// Modify the class name to use for the application.
-    pub fn with_class_name<C>(self, class_name: C) -> Self
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::ContextBuilder;
+    ///
+    /// let mut builder = ContextBuilder::new("Example Application")
+    ///     .class_name("se.tedro.Example");
+    /// ```
+    pub fn class_name<C>(self, class_name: C) -> Self
     where
         C: fmt::Display,
     {

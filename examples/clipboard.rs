@@ -9,7 +9,7 @@ const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut builder = ContextBuilder::new("Example Application").with_clipboard_events(true);
+    let mut builder = ContextBuilder::new("Example Application").clipboard_events(true);
     builder.set_icon(ICON, 22, 22);
 
     let (sender, mut event_loop) = builder.build().await?;

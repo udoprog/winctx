@@ -25,7 +25,7 @@ impl MenuItem {
     /// use winctx::{ContextBuilder, MenuItem};
     ///
     /// let mut builder = ContextBuilder::new("Example Application")
-    ///     .with_class_name("se.tedro.Example");
+    ///     .class_name("se.tedro.Example");
     /// builder.push_menu_item(MenuItem::separator());
     /// ```
     pub fn separator() -> Self {
@@ -50,7 +50,7 @@ impl MenuItem {
     /// use winctx::{ContextBuilder, MenuItem};
     ///
     /// let mut builder = ContextBuilder::new("Example Application")
-    ///     .with_class_name("se.tedro.Example");
+    ///     .class_name("se.tedro.Example");
     /// builder.push_menu_item(MenuItem::entry("Example Application", true));
     /// builder.push_menu_item(MenuItem::entry("Exit...", false));
     /// ```

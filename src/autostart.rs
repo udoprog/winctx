@@ -30,7 +30,7 @@ impl AutoStart {
     /// Construct a new auto start helper.
     ///
     /// The name should be something suitable for a registry key, like
-    /// `OxidizeBot`.
+    /// `OxidizeBot`. Note that in the registry it is case-insensitive.
     #[inline]
     pub fn new<N, E>(name: N, executable: E) -> Self
     where
@@ -45,7 +45,7 @@ impl AutoStart {
     }
 
     /// Append arguments to the executable when autostarting.
-    pub fn with_arguments<A>(&mut self, arguments: A)
+    pub fn arguments<A>(&mut self, arguments: A)
     where
         A: IntoIterator,
         A::Item: AsRef<OsStr>,

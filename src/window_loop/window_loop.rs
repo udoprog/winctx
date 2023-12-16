@@ -411,12 +411,14 @@ impl WindowLoop {
     /// Send a notification.
     pub(crate) fn send_notification(&self, token: u32, n: Notification) -> io::Result<()> {
         /// Convert into a flag.
-        fn into_flags(icon: NotificationIcon) -> u32 {
-            match icon {
+        fn into_flags(options: u32, icon: NotificationIcon) -> u32 {
+            let icon = match icon {
                 NotificationIcon::Info => shellapi::NIIF_INFO,
                 NotificationIcon::Error => shellapi::NIIF_ERROR,
                 NotificationIcon::Warning => shellapi::NIIF_WARNING,
-            }
+            };
+
+            options | icon
         }
 
         let mut nid = self.info.new_nid();
@@ -432,7 +434,7 @@ impl WindowLoop {
             nid.Anonymous.uTimeout = timeout.as_millis() as u32;
         }
 
-        nid.dwInfoFlags = into_flags(n.icon);
+        nid.dwInfoFlags = into_flags(n.options, n.icon);
         nid.uCallbackMessage = token;
 
         let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };

@@ -62,7 +62,7 @@
 //!
 //!                 if token == notification {
 //!                     sender.notification(
-//!                         Notification::new("And this is a body").with_title("This is a title"),
+//!                         Notification::new("And this is a body").title("This is a title"),
 //!                     );
 //!                     continue;
 //!                 }
@@ -103,45 +103,55 @@
 #![allow(clippy::module_inception)]
 #![deny(missing_docs)]
 
+/// Convenient result alias for this crate.
+pub type Result<T, E = Error> = core::result::Result<T, E>;
+
 mod clipboard;
 mod convert;
 
+#[doc(inline)]
 pub use self::registry::{OpenRegistryKey, RegistryKey};
 mod registry;
 
+#[doc(inline)]
 pub use self::window::Window;
 pub mod window;
 
 mod window_loop;
 
+#[doc(inline)]
 pub use self::notification::Notification;
-mod notification;
+pub mod notification;
 
+#[doc(inline)]
 pub use self::error::Error;
 mod error;
 
+#[doc(inline)]
 pub use self::token::Token;
 mod token;
 
+#[doc(inline)]
 pub use self::event_loop::{ClipboardEvent, Event, EventLoop, Sender};
 mod event_loop;
 
+#[doc(inline)]
 pub use self::context_builder::ContextBuilder;
 mod context_builder;
 
+#[doc(inline)]
 pub use self::autostart::AutoStart;
 mod autostart;
 
 pub mod tools;
 
+#[doc(inline)]
 pub use self::named_mutex::NamedMutex;
 mod named_mutex;
 
+#[doc(inline)]
 pub use self::menu_item::MenuItem;
 pub(crate) mod menu_item;
-
-/// Result alias for winctx.
-pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[cfg_attr(windows, path = "windows/real.rs")]
 #[cfg_attr(not(windows), path = "windows/fake.rs")]

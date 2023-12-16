@@ -7,8 +7,7 @@ const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder =
-        ContextBuilder::new("Example Application").with_class_name("se.tedro.Example");
+    let mut builder = ContextBuilder::new("Example Application").class_name("se.tedro.Example");
     builder.set_icon(ICON, 22, 22);
 
     builder.push_menu_item(MenuItem::entry("Hello World", true));
@@ -41,7 +40,9 @@ async fn main() -> winctx::Result<()> {
 
                 if token == notification {
                     sender.notification(
-                        Notification::new("And this is a body").with_title("This is a title"),
+                        Notification::new("And this is a body")
+                            .title("This is a title")
+                            .large_icon(),
                     );
                     continue;
                 }
