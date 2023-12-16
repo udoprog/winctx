@@ -16,7 +16,7 @@ pub(super) struct Icon {
     pub(super) height: u32,
 }
 
-/// The builder of a windows context.
+/// The builder of a window context.
 pub struct ContextBuilder {
     name: String,
     menu: Vec<MenuItem>,
