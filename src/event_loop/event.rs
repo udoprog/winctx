@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::{Error, Token};
 
 /// A clipbaord event.
 #[derive(Debug)]
@@ -24,4 +24,6 @@ pub enum Event {
     Clipboard(ClipboardEvent),
     /// Window has been shut down.
     Shutdown,
+    /// A non-fatal error has been reported.
+    Error(Error),
 }

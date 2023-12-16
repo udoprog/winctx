@@ -29,7 +29,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
             ErrorKind::WindowSetup(..) => write!(f, "Failed to set up window"),
-            ErrorKind::WindowError(..) => write!(f, "Error in window thread"),
+            ErrorKind::ThreadError(..) => write!(f, "Error in window thread"),
+            ErrorKind::ClipboardPoll(..) => write!(f, "Failed to poll clipboard"),
             ErrorKind::DeleteRegistryKey(..) => write!(f, "Failed to delete registry key"),
             ErrorKind::GetRegistryValue(..) => write!(f, "Failed to get registry value"),
             ErrorKind::SetRegistryKey(..) => write!(f, "Failed to set registry key"),
@@ -55,7 +56,8 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.kind {
             ErrorKind::WindowSetup(error) => Some(error),
-            ErrorKind::WindowError(error) => Some(error),
+            ErrorKind::ThreadError(error) => Some(error),
+            ErrorKind::ClipboardPoll(error) => Some(error),
             ErrorKind::DeleteRegistryKey(error) => Some(error),
             ErrorKind::GetRegistryValue(error) => Some(error),
             ErrorKind::SetRegistryKey(error) => Some(error),
@@ -122,7 +124,8 @@ impl std::error::Error for WindowError {
 #[derive(Debug)]
 pub(super) enum ErrorKind {
     WindowSetup(WindowError),
-    WindowError(WindowError),
+    ThreadError(WindowError),
+    ClipboardPoll(WindowError),
     DeleteRegistryKey(io::Error),
     GetRegistryValue(io::Error),
     SetRegistryKey(io::Error),

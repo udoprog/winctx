@@ -4,11 +4,12 @@ mod clipboard_format;
 use std::ffi::c_void;
 use std::io;
 use std::marker::PhantomData;
+use std::ops::Range;
 use std::slice;
 
 use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
 use windows_sys::Win32::Foundation::{FALSE, HANDLE, HWND};
-use windows_sys::Win32::System::DataExchange::EnumClipboardFormats;
+use windows_sys::Win32::System::DataExchange::GetUpdatedClipboardFormats;
 use windows_sys::Win32::System::DataExchange::{CloseClipboard, GetClipboardData, OpenClipboard};
 use windows_sys::Win32::System::Memory::{GlobalLock, GlobalSize, GlobalUnlock};
 
@@ -29,14 +30,17 @@ impl Clipboard {
         Ok(Self)
     }
 
-    /// Enumerate over available clipboard formats.
-    pub(super) fn formats(&self) -> Formats<'_> {
-        // SAFETY: This can only be called after the clipboard has been opened.
-        let format = ClipboardFormat::new(unsafe { EnumClipboardFormats(0) } as u16);
+    /// Enumerate available clipboard formats.
+    pub(super) fn updated_formats<const N: usize>() -> UpdatedFormats<N> {
+        unsafe {
+            let mut formats = [0u32; N];
+            let mut actual = 0;
+            GetUpdatedClipboardFormats(formats.as_mut_ptr(), 16, &mut actual);
 
-        Formats {
-            format,
-            _clipboard: self,
+            UpdatedFormats {
+                formats,
+                range: 0..actual as usize,
+            }
         }
     }
 
@@ -127,23 +131,18 @@ impl Drop for Lock<'_> {
 }
 
 /// An iterator over clipboard formats.
-pub(super) struct Formats<'a> {
-    format: ClipboardFormat,
-    _clipboard: &'a Clipboard,
+pub(super) struct UpdatedFormats<const N: usize> {
+    formats: [u32; N],
+    range: Range<usize>,
 }
 
-impl Iterator for Formats<'_> {
+impl<const N: usize> Iterator for UpdatedFormats<N> {
     type Item = ClipboardFormat;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.format == ClipboardFormat::new(0) {
-            return None;
-        }
-
-        let format = self.format;
-        // SAFETY: This can only be called after the clipboard has been opened.
-        self.format =
-            ClipboardFormat::new(unsafe { EnumClipboardFormats(format.as_u16() as u32) } as u16);
-        Some(format)
+        let index = self.range.next()?;
+        let format = self.formats[index];
+        Some(ClipboardFormat::new(format as u16))
     }
 }

@@ -7,14 +7,13 @@ use std::ptr;
 use std::str;
 use std::thread;
 
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
+use tokio::sync::oneshot;
 use windows_sys::Win32::Foundation::{FALSE, HWND, LPARAM, LRESULT, TRUE, WPARAM};
-use windows_sys::Win32::Graphics::Gdi::HBRUSH;
 use windows_sys::Win32::System::DataExchange::AddClipboardFormatListener;
 use windows_sys::Win32::UI::Shell as shellapi;
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 
-use crate::clipboard::{Clipboard, ClipboardFormat};
 use crate::convert::ToWide;
 use crate::error::ErrorKind::*;
 use crate::error::{Error, WindowError};
@@ -22,12 +21,8 @@ use crate::event_loop::ClipboardEvent;
 use crate::notification::NotificationIcon;
 use crate::{Notification, Result};
 
-use super::Icon;
-
-const ICON_MSG_ID: u32 = winuser::WM_USER + 1;
-const CLIPBOARD_RETRY_TIMER: usize = 1000;
-const RETRY_MILLIS: u32 = 100;
-const RETRY_MAX_ATTEMPTS: usize = 10;
+use super::menu_manager;
+use super::{ClipboardManager, Icon, MenuManager};
 
 /// Copy a wide string from a source to a destination.
 pub(crate) fn copy_wstring(dest: &mut [u16], source: &str) {
@@ -54,7 +49,7 @@ impl WindowInfo {
     fn add_icon(&self) -> io::Result<()> {
         let mut nid = self.new_nid();
         nid.uFlags = shellapi::NIF_MESSAGE;
-        nid.uCallbackMessage = ICON_MSG_ID;
+        nid.uCallbackMessage = menu_manager::ICON_MSG_ID;
 
         let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_ADD, &nid) };
 
@@ -95,6 +90,8 @@ pub(crate) enum WindowEvent {
     BalloonClicked,
     /// Balloon timed out.
     BalloonTimeout,
+    /// Non-fatal error.
+    Error(Error),
 }
 
 unsafe extern "system" fn window_proc(
@@ -103,8 +100,9 @@ unsafe extern "system" fn window_proc(
     w_param: WPARAM,
     l_param: LPARAM,
 ) -> LRESULT {
+    // Match over all messages we want to post back to the event loop.
     match msg {
-        ICON_MSG_ID => {
+        menu_manager::ICON_MSG_ID => {
             if matches!(
                 l_param as u32,
                 shellapi::NIN_BALLOONUSERCLICK
@@ -116,11 +114,15 @@ unsafe extern "system" fn window_proc(
                 return 0;
             }
         }
-        winuser::WM_MENUCOMMAND | winuser::WM_DESTROY => {
+        winuser::WM_MENUCOMMAND => {
             winuser::PostMessageW(hwnd, msg, w_param, l_param);
             return 0;
         }
         winuser::WM_CLIPBOARDUPDATE => {
+            winuser::PostMessageW(hwnd, msg, w_param, l_param);
+            return 0;
+        }
+        winuser::WM_DESTROY => {
             winuser::PostMessageW(hwnd, msg, w_param, l_param);
             return 0;
         }
@@ -143,9 +145,9 @@ unsafe fn init_window(class_name: Vec<u16>, name: Vec<u16>) -> io::Result<Window
         cbClsExtra: 0,
         cbWndExtra: 0,
         hInstance: 0,
-        hIcon: winuser::LoadIconW(0, winuser::IDI_APPLICATION),
-        hCursor: winuser::LoadCursorW(0, winuser::IDI_APPLICATION),
-        hbrBackground: 16 as HBRUSH,
+        hIcon: 0,
+        hCursor: 0,
+        hbrBackground: 0,
         lpszMenuName: ptr::null(),
         lpszClassName: class_name.as_ptr(),
     };
@@ -158,10 +160,10 @@ unsafe fn init_window(class_name: Vec<u16>, name: Vec<u16>) -> io::Result<Window
         0,
         class_name.as_ptr(),
         name.as_ptr(),
-        winuser::WS_OVERLAPPEDWINDOW,
-        winuser::CW_USEDEFAULT,
+        winuser::WS_DISABLED,
         0,
-        winuser::CW_USEDEFAULT,
+        0,
+        0,
         0,
         0,
         0,
@@ -221,110 +223,43 @@ impl Window {
             // initialized in the background thread.
             let info = init_window(class_name, name).map_err(WindowError::Init)?;
 
-            if clipboard_events {
+            let mut clipboard_manager = if clipboard_events {
                 if AddClipboardFormatListener(info.hwnd) == FALSE {
                     return Err(WindowError::AddClipboardFormatListener(
                         io::Error::last_os_error(),
                     ));
                 }
-            }
+
+                Some(ClipboardManager::new(&events_tx))
+            } else {
+                None
+            };
+
+            let mut menu_manager = MenuManager::new(&events_tx, info.hmenu);
 
             if return_tx.send(info.clone()).is_err() {
                 return Ok(());
             }
 
-            let mut clipboard_retry_attempts = 0;
             let mut msg = MaybeUninit::zeroed();
 
-            loop {
-                let ret = winuser::GetMessageW(msg.as_mut_ptr(), info.hwnd, 0, 0);
-
-                if ret == FALSE {
-                    break;
-                }
-
+            while winuser::GetMessageW(msg.as_mut_ptr(), info.hwnd, 0, 0) != FALSE {
                 let msg = &*msg.as_ptr();
 
+                if let Some(clipboard_manager) = &mut clipboard_manager {
+                    if clipboard_manager.dispatch(msg) {
+                        continue;
+                    }
+                }
+
+                if menu_manager.dispatch(msg) {
+                    continue;
+                }
+
                 match msg.message {
-                    ICON_MSG_ID => {
-                        match msg.lParam as u32 {
-                            // Balloon clicked.
-                            shellapi::NIN_BALLOONUSERCLICK => {
-                                _ = events_tx.send(WindowEvent::BalloonClicked);
-                                continue;
-                            }
-                            // Balloon timed out.
-                            shellapi::NIN_BALLOONTIMEOUT => {
-                                _ = events_tx.send(WindowEvent::BalloonTimeout);
-                                continue;
-                            }
-                            winuser::WM_LBUTTONUP | winuser::WM_RBUTTONUP => {
-                                let mut p = MaybeUninit::zeroed();
-
-                                if winuser::GetCursorPos(p.as_mut_ptr()) == FALSE {
-                                    continue;
-                                }
-
-                                let p = p.assume_init();
-
-                                winuser::SetForegroundWindow(msg.hwnd);
-
-                                winuser::TrackPopupMenu(
-                                    info.hmenu,
-                                    0,
-                                    p.x,
-                                    p.y,
-                                    (winuser::TPM_BOTTOMALIGN | winuser::TPM_LEFTALIGN) as i32,
-                                    msg.hwnd,
-                                    ptr::null_mut(),
-                                );
-
-                                continue;
-                            }
-                            _ => (),
-                        }
-                    }
-                    winuser::WM_MENUCOMMAND => {
-                        let menu_id = winuser::GetMenuItemID(info.hmenu, msg.wParam as i32) as i32;
-
-                        if menu_id != -1 {
-                            _ = events_tx.send(WindowEvent::MenuClicked(menu_id as u32));
-                        }
-
-                        continue;
-                    }
-                    winuser::WM_CLIPBOARDUPDATE if clipboard_events => {
-                        winuser::SetTimer(msg.hwnd, CLIPBOARD_RETRY_TIMER, RETRY_MILLIS, None);
-                        clipboard_retry_attempts = 0;
-                        continue;
-                    }
                     winuser::WM_QUIT | winuser::WM_DESTROY => {
                         break;
                     }
-                    winuser::WM_TIMER => match msg.wParam {
-                        CLIPBOARD_RETRY_TIMER => {
-                            let last_attempt = clipboard_retry_attempts >= RETRY_MAX_ATTEMPTS;
-
-                            if last_attempt {
-                                winuser::KillTimer(msg.hwnd, CLIPBOARD_RETRY_TIMER);
-                            } else {
-                                clipboard_retry_attempts += 1;
-                            }
-
-                            let Ok(result) = handle_clipboard_event(msg.hwnd) else {
-                                continue;
-                            };
-
-                            winuser::KillTimer(msg.hwnd, CLIPBOARD_RETRY_TIMER);
-
-                            if let Some(clipboard_event) = result {
-                                _ = events_tx.send(WindowEvent::Clipboard(clipboard_event));
-                            }
-
-                            continue;
-                        }
-                        _ => {}
-                    },
                     _ => {}
                 }
 
@@ -372,8 +307,8 @@ impl Window {
         if let Some(thread) = self.thread.take() {
             thread
                 .join()
-                .map_err(|_| WindowError(WindowError::ThreadPanicked))?
-                .map_err(WindowError)?;
+                .map_err(|_| ThreadError(WindowError::ThreadPanicked))?
+                .map_err(ThreadError)?;
         }
 
         Ok(())
@@ -490,69 +425,4 @@ impl Window {
         self.icon = Some(icon);
         Ok(())
     }
-}
-
-unsafe fn handle_clipboard_event(hwnd: HWND) -> Result<Option<ClipboardEvent>, WindowError> {
-    let clipboard = Clipboard::new(hwnd).map_err(WindowError::OpenClipboard)?;
-
-    let format = 'out: {
-        for format in clipboard.formats() {
-            match format {
-                format @ (ClipboardFormat::DIBV5
-                | ClipboardFormat::TEXT
-                | ClipboardFormat::UNICODETEXT) => {
-                    break 'out Some(format);
-                }
-                _ => {}
-            }
-        }
-
-        None
-    };
-
-    let Some(format) = format else {
-        return Ok(None);
-    };
-
-    let data = clipboard
-        .data(format)
-        .map_err(WindowError::GetClipboardData)?;
-    let data = data.lock().map_err(WindowError::LockClipboardData)?;
-
-    let clipboard_event = match format {
-        ClipboardFormat::DIBV5 => ClipboardEvent::BitMap(data.as_slice().to_vec()),
-        ClipboardFormat::TEXT => {
-            let data = data.as_slice();
-
-            let data = match data {
-                [head @ .., 0] => head,
-                rest => rest,
-            };
-
-            let Ok(string) = str::from_utf8(data) else {
-                return Ok(None);
-            };
-
-            ClipboardEvent::Text(string.to_owned())
-        }
-        ClipboardFormat::UNICODETEXT => {
-            let data = data.as_wide_slice();
-
-            let data = match data {
-                [head @ .., 0] => head,
-                rest => rest,
-            };
-
-            let Ok(string) = String::from_utf16(data) else {
-                return Ok(None);
-            };
-
-            ClipboardEvent::Text(string.to_owned())
-        }
-        _ => {
-            return Ok(None);
-        }
-    };
-
-    Ok(Some(clipboard_event))
 }

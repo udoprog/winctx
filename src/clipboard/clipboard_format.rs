@@ -143,7 +143,7 @@ impl ClipboardFormat {
 
 impl ClipboardFormat {
     /// Construct a new clipboard format from the given raw value.
-    pub(super) const fn new(value: u16) -> Self {
+    pub(crate) const fn new(value: u16) -> Self {
         Self(value)
     }
 
