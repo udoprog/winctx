@@ -109,6 +109,9 @@ impl EventLoop {
                             let current = self.take_notification()?;
                             return Ok(Event::NotificationDismissed(Token::new(current)));
                         }
+                        WindowEvent::Error(error) => {
+                            return Ok(Event::Error(error));
+                        }
                     }
                 }
             }
