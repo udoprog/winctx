@@ -7,7 +7,8 @@ const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder = ContextBuilder::new("Example Application");
+    let mut builder =
+        ContextBuilder::new("Example Application").with_class_name("se.tedro.Example");
     builder.set_icon(ICON, 22, 22);
 
     builder.push_menu_item(MenuItem::entry("Hello World", true));
@@ -35,7 +36,7 @@ async fn main() -> winctx::Result<()> {
         };
 
         match event {
-            Event::MenuEntryClicked(token) => {
+            Event::MenuItemClicked(token) => {
                 println!("Menu entry clicked: {:?}", token);
 
                 if token == notification {
@@ -60,6 +61,9 @@ async fn main() -> winctx::Result<()> {
             }
             Event::NotificationDismissed(token) => {
                 println!("Notification dismissed: {:?}", token);
+            }
+            Event::CopyData(ty, bytes) => {
+                println!("Data of type {ty} copied to process: {:?}", bytes);
             }
             Event::Shutdown => {
                 println!("Window shut down");

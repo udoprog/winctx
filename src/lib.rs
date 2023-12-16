@@ -5,10 +5,12 @@
 //! A minimally viable Windows context for Rust.
 //!
 //! This allows non-gui applications to:
-//! * Register and use a context menu, the icons you see in the bottom right for
-//!   running applications.
-//! * Send notifcations, or balloons as Windows call them.
-//! * Monitor the clipboard for changes.
+//! * [Register and use a context menu, the icons you see in the bottom right
+//!   for running applications][showcase].
+//! * [Send notifcations, or balloons as Windows call them][showcase].
+//! * [Monitor the clipboard for changes][clipboard].
+//! * [Access the registry][registry].
+//! * [Copy data to the current process remotely][copy-data].
 //!
 //! Note that crate is fairly opinionated, not everything that is possible
 //! through the underlying APIs will be exposed.
@@ -55,7 +57,7 @@
 //!         };
 //!
 //!         match event {
-//!             Event::MenuEntryClicked(token) => {
+//!             Event::MenuItemClicked(token) => {
 //!                 println!("Menu entry clicked: {:?}", token);
 //!
 //!                 if token == notification {
@@ -92,6 +94,11 @@
 //!     Ok(())
 //! }
 //! ```
+//!
+//! [showcase]: https://github.com/udoprog/winctx/blob/main/examples/showcase.rs
+//! [clipboard]: https://github.com/udoprog/winctx/blob/main/examples/clipboard.rs
+//! [registry]: https://github.com/udoprog/winctx/blob/main/examples/registry.rs
+//! [copy-data]: https://github.com/udoprog/winctx/blob/main/examples/copy_data.rs
 
 #![allow(clippy::module_inception)]
 #![deny(missing_docs)]
@@ -102,7 +109,10 @@ mod convert;
 pub use self::registry::{OpenRegistryKey, RegistryKey};
 mod registry;
 
-mod window;
+pub use self::window::Window;
+pub mod window;
+
+mod window_loop;
 
 pub use self::notification::Notification;
 mod notification;

@@ -1,11 +1,4 @@
-pub(super) use self::window::{Window, WindowEvent};
+//! Utilities for working with windows.
+
+pub use self::window::{FindWindow, Window};
 mod window;
-
-pub(crate) use self::icon::Icon;
-mod icon;
-
-use self::clipboard_manager::ClipboardManager;
-mod clipboard_manager;
-
-use self::menu_manager::MenuManager;
-mod menu_manager;

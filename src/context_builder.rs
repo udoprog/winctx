@@ -5,8 +5,8 @@ use tokio::sync::mpsc;
 use crate::error::ErrorKind::*;
 use crate::error::SetupMenuError;
 use crate::menu_item::{MenuItem, MenuItemKind};
-use crate::window;
-use crate::window::Window;
+use crate::window_loop;
+use crate::window_loop::WindowLoop;
 use crate::Result;
 use crate::{EventLoop, Sender, Token};
 
@@ -102,7 +102,7 @@ impl ContextBuilder {
 
         let class_name = self.class_name.as_deref().unwrap_or(self.name.as_str());
 
-        let mut window = Window::new(class_name, &self.name, self.clipboard_events)
+        let mut window = WindowLoop::new(class_name, &self.name, self.clipboard_events)
             .await
             .map_err(WindowSetup)?;
 
@@ -110,7 +110,7 @@ impl ContextBuilder {
 
         let icon = match self.icon {
             Some(icon) => Some(
-                window::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
                     .map_err(BuildIcon)?,
             ),
             None => None,
@@ -122,7 +122,7 @@ impl ContextBuilder {
 
         let error_icon = match self.error_icon {
             Some(icon) => Some(
-                window::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
                     .map_err(BuildErrorIcon)?,
             ),
             None => None,
@@ -133,7 +133,7 @@ impl ContextBuilder {
         Ok((system, event_loop))
     }
 
-    fn setup_menu(&self, window: &mut Window) -> Result<(), SetupMenuError> {
+    fn setup_menu(&self, window: &mut WindowLoop) -> Result<(), SetupMenuError> {
         for (index, item) in self.menu.iter().enumerate() {
             debug_assert!(u32::try_from(index).is_ok());
 

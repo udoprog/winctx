@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 use crate::error::Error;
 use crate::error::ErrorKind::*;
 use crate::token::Token;
-use crate::window::{Icon, Window, WindowEvent};
+use crate::window_loop::{Icon, WindowEvent, WindowLoop};
 use crate::Notification;
 use crate::Result;
 
@@ -16,7 +16,7 @@ pub struct EventLoop {
     icon: Option<Icon>,
     icon_error: Option<Icon>,
     events_rx: mpsc::UnboundedReceiver<InputEvent>,
-    window: Window,
+    window: WindowLoop,
     visible: Option<u32>,
     pending: VecDeque<(u32, Notification)>,
 }
@@ -26,7 +26,7 @@ impl EventLoop {
         icon: Option<Icon>,
         icon_error: Option<Icon>,
         events_rx: mpsc::UnboundedReceiver<InputEvent>,
-        window: Window,
+        window: WindowLoop,
     ) -> Self {
         Self {
             icon,
@@ -91,26 +91,29 @@ impl EventLoop {
                 }
                 e = self.window.tick() => {
                     match e {
-                        WindowEvent::MenuClicked(idx) => {
-                            return Ok(Event::MenuEntryClicked(Token::new(idx)));
+                        WindowEvent::MenuItemClicked(idx) => {
+                            return Ok(Event::MenuItemClicked(Token::new(idx)));
                         },
-                        WindowEvent::Shutdown => {
-                            self.window.join()?;
-                            return Ok(Event::Shutdown);
-                        }
                         WindowEvent::Clipboard(clipboard_event) => {
                             return Ok(Event::Clipboard(clipboard_event));
                         }
-                        WindowEvent::BalloonClicked => {
+                        WindowEvent::NotificationClicked => {
                             let current = self.take_notification()?;
                             return Ok(Event::NotificationClicked(Token::new(current)));
                         }
-                        WindowEvent::BalloonTimeout => {
+                        WindowEvent::NotificationDismissed => {
                             let current = self.take_notification()?;
                             return Ok(Event::NotificationDismissed(Token::new(current)));
                         }
+                        WindowEvent::CopyData(ty, bytes) => {
+                            return Ok(Event::CopyData(ty, bytes));
+                        }
                         WindowEvent::Error(error) => {
                             return Ok(Event::Error(error));
+                        }
+                        WindowEvent::Shutdown => {
+                            self.window.join()?;
+                            return Ok(Event::Shutdown);
                         }
                     }
                 }

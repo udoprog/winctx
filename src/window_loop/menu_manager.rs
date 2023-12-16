@@ -7,9 +7,8 @@ use windows_sys::Win32::UI::Shell as shellapi;
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 use windows_sys::Win32::UI::WindowsAndMessaging::MSG;
 
+use super::messages;
 use super::WindowEvent;
-
-pub(super) const ICON_MSG_ID: u32 = winuser::WM_USER + 1;
 
 /// Helper to manager clipboard polling state.
 pub(super) struct MenuManager<'a> {
@@ -24,16 +23,16 @@ impl<'a> MenuManager<'a> {
 
     pub(super) unsafe fn dispatch(&mut self, msg: &MSG) -> bool {
         match msg.message {
-            ICON_MSG_ID => {
+            messages::ICON_ID => {
                 match msg.lParam as u32 {
                     // Balloon clicked.
                     shellapi::NIN_BALLOONUSERCLICK => {
-                        _ = self.events_tx.send(WindowEvent::BalloonClicked);
+                        _ = self.events_tx.send(WindowEvent::NotificationClicked);
                         return true;
                     }
                     // Balloon timed out.
                     shellapi::NIN_BALLOONTIMEOUT => {
-                        _ = self.events_tx.send(WindowEvent::BalloonTimeout);
+                        _ = self.events_tx.send(WindowEvent::NotificationDismissed);
                         return true;
                     }
                     winuser::WM_LBUTTONUP | winuser::WM_RBUTTONUP => {
@@ -68,7 +67,7 @@ impl<'a> MenuManager<'a> {
                 if menu_id != -1 {
                     _ = self
                         .events_tx
-                        .send(WindowEvent::MenuClicked(menu_id as u32));
+                        .send(WindowEvent::MenuItemClicked(menu_id as u32));
                 }
 
                 return true;

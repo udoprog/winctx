@@ -15,13 +15,18 @@ pub enum ClipboardEvent {
 #[non_exhaustive]
 pub enum Event {
     /// The menu item identified by [`Token`] has been clicked.
-    MenuEntryClicked(Token),
+    MenuItemClicked(Token),
     /// Indicates that the notification with the associated token has been clicked.
     NotificationClicked(Token),
     /// The notification associated with the given token either timed out or was dismissed.
     NotificationDismissed(Token),
     /// The system clipboard has been modified.
     Clipboard(ClipboardEvent),
+    /// Data was copied to the current process remotely using
+    /// [`Window::copy_data`].
+    ///
+    /// [`Window::copy_data`]: crate::Window::copy_data
+    CopyData(usize, Vec<u8>),
     /// Window has been shut down.
     Shutdown,
     /// A non-fatal error has been reported.
