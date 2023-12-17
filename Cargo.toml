@@ -1,6 +1,6 @@
 [package]
 name = "winctx"
-version = "0.0.16"
+version = "0.0.17"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 edition = "2021"
 rust-version = "1.68"
