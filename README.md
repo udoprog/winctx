@@ -42,7 +42,7 @@ The basic loop looks like this:
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, MenuItem, Icons, WindowBuilder};
+use winctx::{Event, Icons, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -57,9 +57,9 @@ let area = window.new_area().icon(icon);
 
 let menu = area.popup_menu();
 
-let first = menu.push(MenuItem::entry("Example Application"));
-menu.push(MenuItem::separator());
-let quit = menu.push(MenuItem::entry("Quit"));
+let first = menu.push_entry("Example Application").id();
+menu.push_separator();
+let quit = menu.push_entry("Quit").id();
 menu.set_default(first);
 
 let (sender, mut event_loop) = window
