@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
                     println!("Menu 2 clicked");
                 }
             }
-            Event::Shutdown => {
+            Event::Shutdown { .. } => {
                 println!("Window shut down");
                 break;
             }

@@ -58,7 +58,7 @@ use crate::AreaId;
 ///     };
 ///
 ///     match event {
-///         Event::MenuItemClicked(item_id) => {
+///         Event::MenuItemClicked { item_id, .. } => {
 ///             match item_id {
 ///                 winctx::item_id!(0, 0) => {
 ///                     println!("first item clicked");
@@ -73,7 +73,7 @@ use crate::AreaId;
 ///                 _ => {}
 ///             }
 ///         }
-///         Event::Shutdown => {
+///         Event::Shutdown { .. } => {
 ///             println!("Window shut down");
 ///             break;
 ///         }

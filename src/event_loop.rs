@@ -84,7 +84,7 @@ impl EventLoop {
                         }
                         InputEvent::Shutdown => {
                             self.window_loop.join()?;
-                            return Ok(Event::Shutdown);
+                            return Ok(Event::Shutdown {});
                         }
                     }
                 }
@@ -124,7 +124,7 @@ impl EventLoop {
                         }
                         WindowEvent::Shutdown => {
                             self.window_loop.join()?;
-                            return Ok(Event::Shutdown);
+                            return Ok(Event::Shutdown {});
                         }
                     }
                 }

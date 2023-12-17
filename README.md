@@ -84,14 +84,14 @@ loop {
     };
 
     match event {
-        Event::MenuItemClicked(item_id) => {
+        Event::MenuItemClicked { item_id, .. } => {
             println!("Menu entry clicked: {item_id:?}");
 
             if item_id == quit {
                 sender.shutdown();
             }
         }
-        Event::Shutdown => {
+        Event::Shutdown { .. } => {
             println!("Window shut down");
             break;
         }

@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
                 }
                 _ => {}
             },
-            Event::Shutdown => {
+            Event::Shutdown { .. } => {
                 println!("Window shut down");
                 break;
             }

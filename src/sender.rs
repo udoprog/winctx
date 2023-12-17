@@ -10,7 +10,7 @@ use crate::notification::NotificationIcon;
 use crate::{AreaId, Icon, ItemId, ModifyArea, ModifyMenuItem, Notification, NotificationId};
 
 #[derive(Debug)]
-pub(crate) enum InputEvent {
+pub(super) enum InputEvent {
     Shutdown,
     ModifyArea {
         area_id: AreaId,

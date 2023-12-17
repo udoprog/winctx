@@ -44,14 +44,12 @@ impl PopupMenu {
     /// menu.push_separator();
     /// menu.push_entry("Exit...");
     /// ```
-    pub fn open_menu<I>(self, buttons: I) -> Self
+    pub fn open_menu<I>(&mut self, buttons: I) -> &mut Self
     where
         I: IntoIterator<Item = MouseButton>,
     {
-        Self {
-            open_menu: MouseButtons::from_iter(buttons),
-            ..self
-        }
+        self.open_menu = MouseButtons::from_iter(buttons);
+        self
     }
 
     /// Construct a menu entry.

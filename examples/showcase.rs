@@ -125,7 +125,7 @@ async fn main() -> winctx::Result<()> {
             Event::CopyData { ty, data, .. } => {
                 println!("Data of type {ty} copied to process: {:?}", data);
             }
-            Event::Shutdown => {
+            Event::Shutdown { .. } => {
                 println!("Window shut down");
                 break;
             }

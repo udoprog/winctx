@@ -77,7 +77,7 @@ pub enum ClipboardEvent {
 #[non_exhaustive]
 pub enum Event {
     /// Window has been shut down.
-    Shutdown,
+    Shutdown {},
     /// The menu item identified by [`ItemId`] has been clicked.
     MenuItemClicked {
         /// The item that was clicked.
