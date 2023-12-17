@@ -4,23 +4,21 @@ use std::ffi::OsString;
 use tokio::sync::mpsc;
 
 use crate::error::ErrorKind::*;
-use crate::error::SetupMenuError;
+use crate::error::{SetupIconsError, SetupMenuError};
 use crate::menu_item::MenuItemKind;
-use crate::window_loop;
-use crate::window_loop::WindowLoop;
-use crate::NotificationIcons;
+use crate::window_loop::{IconHandle, MenuHandle, WindowLoop};
+use crate::Icons;
 use crate::NotificationMenu;
 use crate::Result;
-use crate::{EventLoop, Icon, Sender};
+use crate::{EventLoop, Sender};
 
 /// The builder of a window context.
 pub struct WindowBuilder {
     class_name: OsString,
     window_name: Option<OsString>,
     notification_menu: Option<NotificationMenu>,
-    notification_icons: Option<NotificationIcons>,
     clipboard_events: bool,
-    initial_icon: Option<Icon>,
+    icons: Icons,
 }
 
 impl WindowBuilder {
@@ -42,9 +40,8 @@ impl WindowBuilder {
             class_name: class_name.as_ref().to_owned(),
             window_name: None,
             notification_menu: None,
-            notification_icons: None,
             clipboard_events: false,
-            initial_icon: None,
+            icons: Icons::default(),
         }
     }
 
@@ -93,72 +90,68 @@ impl WindowBuilder {
         }
     }
 
-    /// Set the notification icons to use in the tray of the constructed window.
-    pub fn notification_icons(self, notification_icons: NotificationIcons) -> Self {
-        Self {
-            notification_icons: Some(notification_icons),
-            ..self
-        }
-    }
-
-    /// Set the default icon to use.
-    pub fn initial_icon(self, icon: Icon) -> Self {
-        Self {
-            initial_icon: Some(icon),
-            ..self
-        }
+    /// Associate custom icons with the window.
+    pub fn icons(self, icons: Icons) -> Self {
+        Self { icons, ..self }
     }
 
     /// Construct a new event loop and system integration.
     pub async fn build(self) -> Result<(Sender, EventLoop)> {
         let (events_tx, events_rx) = mpsc::unbounded_channel();
 
+        let icons = self.setup_icons(&self.icons).map_err(SetupIcons)?;
+
+        let menu = if let Some(m) = &self.notification_menu {
+            let initial_icon = m.initial_icon.map(|i| i.as_usize());
+            let menu = MenuHandle::new(initial_icon).map_err(BuildMenu)?;
+            self.setup_menu(&menu, m).map_err(SetupMenu)?;
+            Some(menu)
+        } else {
+            None
+        };
+
         let mut window = WindowLoop::new(
             &self.class_name,
             self.window_name.as_deref(),
             self.clipboard_events,
-            self.notification_menu.is_some(),
+            menu.as_ref().map(|m| m.hmenu),
         )
         .await
         .map_err(WindowSetup)?;
 
-        self.setup_menu(&mut window).map_err(SetupMenu)?;
+        if let Some(menu) = menu {
+            window.window.add_icon().map_err(AddIcon)?;
 
-        let event_loop = EventLoop::new(events_rx, window);
+            if let Some(icon) = menu.initial_icon {
+                window.window.set_icon(&icons[icon]).map_err(SetIcon)?;
+            }
+
+            window.menu = Some(menu);
+        }
+
+        let event_loop = EventLoop::new(events_rx, window, icons);
         let system = Sender::new(events_tx);
         Ok((system, event_loop))
     }
 
-    fn setup_menu(&self, l: &mut WindowLoop) -> Result<(), SetupMenuError> {
-        let (Some(menu), Some(notification_menu)) = (&l.menu, &self.notification_menu) else {
-            return Ok(());
-        };
+    fn setup_icons(&self, icons: &Icons) -> Result<Vec<IconHandle>, SetupIconsError> {
+        let mut handles = Vec::with_capacity(icons.icons.len());
 
-        if let Some(notification_icons) = &self.notification_icons {
-            let mut icons = Vec::with_capacity(notification_icons.icons.len());
-
-            for icon in notification_icons.icons.iter() {
-                icons.push(
-                    window_loop::IconHandle::from_buffer(
-                        icon.as_bytes(),
-                        icon.width(),
-                        icon.height(),
-                    )
-                    .map_err(SetupMenuError::BuildIcon)?,
-                );
-            }
-
-            l.window.add_icon().map_err(SetupMenuError::AddIcon)?;
-
-            if let Some(icon) = self.initial_icon {
-                l.window
-                    .set_icon(&icons[icon.as_usize()])
-                    .map_err(SetupMenuError::SetIcon)?;
-            }
-
-            l.icons = icons;
+        for icon in icons.icons.iter() {
+            handles.push(
+                IconHandle::from_buffer(icon.as_bytes(), icon.width(), icon.height())
+                    .map_err(SetupIconsError::BuildIcon)?,
+            );
         }
 
+        Ok(handles)
+    }
+
+    fn setup_menu(
+        &self,
+        menu: &MenuHandle,
+        notification_menu: &NotificationMenu,
+    ) -> Result<(), SetupMenuError> {
         for (index, item) in notification_menu.menu.iter().enumerate() {
             debug_assert!(u32::try_from(index).is_ok());
 

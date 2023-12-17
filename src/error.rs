@@ -35,10 +35,13 @@ impl fmt::Display for Error {
             ErrorKind::GetRegistryValue(..) => write!(f, "Failed to get registry value"),
             ErrorKind::SetRegistryKey(..) => write!(f, "Failed to set registry key"),
             ErrorKind::CurrentExecutable(..) => write!(f, "Could not get current executable"),
+            ErrorKind::BuildMenu(..) => write!(f, "Failed to build menu"),
+            ErrorKind::SetupIcons(..) => write!(f, "Failed to setup icons"),
             ErrorKind::SetupMenu(..) => write!(f, "Failed to setup menu"),
             ErrorKind::ClearTooltip(..) => write!(f, "Failed to clear tooltip message"),
             ErrorKind::SetTooltip(..) => write!(f, "Failed to set tooltip message"),
             ErrorKind::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
+            ErrorKind::AddIcon(..) => write!(f, "Failed to add icon"),
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
             ErrorKind::CreateMutex(..) => write!(f, "Failed to construct mutex"),
             ErrorKind::OpenRegistryKey(..) => write!(f, "Failed to open registry key"),
@@ -61,10 +64,13 @@ impl std::error::Error for Error {
             ErrorKind::GetRegistryValue(error) => Some(error),
             ErrorKind::SetRegistryKey(error) => Some(error),
             ErrorKind::CurrentExecutable(error) => Some(error),
+            ErrorKind::BuildMenu(error) => Some(error),
+            ErrorKind::SetupIcons(error) => Some(error),
             ErrorKind::SetupMenu(error) => Some(error),
             ErrorKind::ClearTooltip(error) => Some(error),
             ErrorKind::SetTooltip(error) => Some(error),
             ErrorKind::SetIcon(error) => Some(error),
+            ErrorKind::AddIcon(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
             ErrorKind::CreateMutex(error) => Some(error),
             ErrorKind::OpenRegistryKey(error) => Some(error),
@@ -131,9 +137,12 @@ pub(super) enum ErrorKind {
     GetRegistryValue(io::Error),
     SetRegistryKey(io::Error),
     CurrentExecutable(io::Error),
+    BuildMenu(io::Error),
+    SetupIcons(SetupIconsError),
     SetupMenu(SetupMenuError),
     ClearTooltip(io::Error),
     SetTooltip(io::Error),
+    AddIcon(io::Error),
     SetIcon(io::Error),
     SendNotification(io::Error),
     CreateMutex(io::Error),
@@ -146,12 +155,29 @@ pub(super) enum ErrorKind {
 }
 
 #[derive(Debug)]
+pub(super) enum SetupIconsError {
+    BuildIcon(io::Error),
+}
+
+impl fmt::Display for SetupIconsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::BuildIcon(..) => write!(f, "Failed to construct icon"),
+        }
+    }
+}
+
+impl std::error::Error for SetupIconsError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::BuildIcon(error) => Some(error),
+        }
+    }
+}
+#[derive(Debug)]
 pub(super) enum SetupMenuError {
     AddMenuEntry(usize, io::Error),
     AddMenuSeparator(usize, io::Error),
-    AddIcon(io::Error),
-    SetIcon(io::Error),
-    BuildIcon(io::Error),
 }
 
 impl fmt::Display for SetupMenuError {
@@ -163,9 +189,6 @@ impl fmt::Display for SetupMenuError {
             Self::AddMenuSeparator(index, ..) => {
                 write!(f, "Failed to add menu separator {index}")
             }
-            Self::AddIcon(..) => write!(f, "Failed to add icon"),
-            Self::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
-            Self::BuildIcon(..) => write!(f, "Failed to construct icon"),
         }
     }
 }
@@ -175,9 +198,6 @@ impl std::error::Error for SetupMenuError {
         match self {
             Self::AddMenuEntry(_, error) => Some(error),
             Self::AddMenuSeparator(_, error) => Some(error),
-            Self::AddIcon(error) => Some(error),
-            Self::SetIcon(error) => Some(error),
-            Self::BuildIcon(error) => Some(error),
         }
     }
 }

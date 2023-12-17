@@ -4,11 +4,11 @@ use crate::{Icon, IconBuffer};
 ///
 /// This defines the various icons that an application using winctx can use.
 #[derive(Default)]
-pub struct NotificationIcons {
+pub struct Icons {
     pub(super) icons: Vec<IconBuffer>,
 }
 
-impl NotificationIcons {
+impl Icons {
     /// Construct a new empty collection of notification icons.
     #[inline]
     pub fn new() -> Self {
@@ -16,6 +16,18 @@ impl NotificationIcons {
     }
 
     /// Push an icon from a buffer and return a handle to it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::Icons;
+    ///
+    /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
+    /// const ICON: &[u8] = include_bytes!("tokio.ico");
+    ///
+    /// let mut icons = Icons::new();
+    /// icons.push_buffer(ICON, 22, 22);
+    /// ```
     pub fn push_buffer<T>(&mut self, buffer: T, width: u32, height: u32) -> Icon
     where
         T: AsRef<[u8]>,

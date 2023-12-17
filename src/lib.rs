@@ -39,16 +39,19 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, MenuItem, Notification, NotificationIcons, NotificationMenu, WindowBuilder};
+//! use winctx::{Event, MenuItem, Notification, Icons, NotificationMenu, WindowBuilder};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
 //!
 //! # #[tokio::main] async fn main() -> winctx::Result<()> {
-//! let mut icons = NotificationIcons::new();
+//! let mut icons = Icons::new();
 //! let initial_icon = icons.push_buffer(ICON, 22, 22);
 //!
-//! let mut menu = NotificationMenu::new();
+//! let mut menu = NotificationMenu::new()
+//!     .icons(icons)
+//!     .initial_icon(initial_icon);
+//!
 //! menu.push(MenuItem::entry("Hello World", true));
 //! let single = menu.push(MenuItem::entry("Show notification", false));
 //! let multiple = menu.push(MenuItem::entry("Show multiple notifications", false));
@@ -57,9 +60,7 @@
 //!
 //! let (sender, mut event_loop) = WindowBuilder::new("se.tedro.Example")
 //!     .window_name("Example Application")
-//!     .notification_icons(icons)
 //!     .notification_menu(menu)
-//!     .initial_icon(initial_icon)
 //!     .build()
 //!     .await?;
 //!
@@ -166,8 +167,8 @@ mod event_loop;
 pub use self::window_builder::WindowBuilder;
 mod window_builder;
 
-pub use self::notification_icons::NotificationIcons;
-mod notification_icons;
+pub use self::icons::Icons;
+mod icons;
 
 pub use self::notification_menu::NotificationMenu;
 mod notification_menu;

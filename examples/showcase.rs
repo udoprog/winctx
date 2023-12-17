@@ -1,16 +1,16 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, MenuItem, Notification, NotificationIcons, NotificationMenu, WindowBuilder};
+use winctx::{Event, Icons, MenuItem, Notification, NotificationMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut icons = NotificationIcons::new();
+    let mut icons = Icons::new();
     let initial_icon = icons.push_buffer(ICON, 22, 22);
 
-    let mut menu = NotificationMenu::new();
+    let mut menu = NotificationMenu::new().initial_icon(initial_icon);
     menu.push(MenuItem::entry("Hello World", true));
     let single = menu.push(MenuItem::entry("Show notification", false));
     let multiple = menu.push(MenuItem::entry("Show multiple notifications", false));
@@ -20,9 +20,8 @@ async fn main() -> winctx::Result<()> {
 
     let (sender, mut event_loop) = WindowBuilder::new("se.tedro.Example")
         .window_name("Example Application")
-        .notification_icons(icons)
         .notification_menu(menu)
-        .initial_icon(initial_icon)
+        .icons(icons)
         .build()
         .await?;
 

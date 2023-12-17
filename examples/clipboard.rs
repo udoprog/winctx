@@ -3,19 +3,21 @@ use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
-use winctx::{Event, NotificationIcons, WindowBuilder};
+use winctx::{Event, Icons, NotificationMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut icons = NotificationIcons::new();
+    let mut icons = Icons::new();
     let default_icon = icons.push_buffer(ICON, 22, 22);
 
+    let menu = NotificationMenu::new().initial_icon(default_icon);
+
     let builder = WindowBuilder::new("Example Application")
+        .icons(icons)
         .clipboard_events(true)
-        .notification_icons(icons)
-        .initial_icon(default_icon);
+        .notification_menu(menu);
 
     let (sender, mut event_loop) = builder.build().await?;
 

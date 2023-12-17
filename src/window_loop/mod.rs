@@ -3,7 +3,7 @@ mod messages;
 pub(super) use self::window_loop::{WindowEvent, WindowLoop};
 mod window_loop;
 
-pub(crate) use self::icon_handle::IconHandle;
+pub(super) use self::icon_handle::IconHandle;
 mod icon_handle;
 
 use self::clipboard_manager::ClipboardManager;
@@ -18,5 +18,5 @@ mod window_handle;
 use self::window_class_handle::WindowClassHandle;
 mod window_class_handle;
 
-use self::menu_handle::MenuHandle;
+pub(super) use self::menu_handle::MenuHandle;
 mod menu_handle;

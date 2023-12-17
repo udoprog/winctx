@@ -1,4 +1,4 @@
-use crate::{MenuItem, Token};
+use crate::{Icon, MenuItem, Token};
 
 /// A notification menu.
 ///
@@ -7,12 +7,21 @@ use crate::{MenuItem, Token};
 #[derive(Default)]
 pub struct NotificationMenu {
     pub(super) menu: Vec<MenuItem>,
+    pub(super) initial_icon: Option<Icon>,
 }
 
 impl NotificationMenu {
     /// Construct a new empty notification menu.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Set the default icon to use.
+    pub fn initial_icon(self, initial_icon: Icon) -> Self {
+        Self {
+            initial_icon: Some(initial_icon),
+            ..self
+        }
     }
 
     /// Push a new menu item.

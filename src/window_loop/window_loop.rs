@@ -24,9 +24,7 @@ use crate::event_loop::ClipboardEvent;
 use crate::window_loop::messages;
 use crate::Result;
 
-use super::{
-    ClipboardManager, IconHandle, MenuHandle, MenuManager, WindowClassHandle, WindowHandle,
-};
+use super::{ClipboardManager, MenuHandle, MenuManager, WindowClassHandle, WindowHandle};
 
 #[derive(Debug)]
 pub(crate) enum WindowEvent {
@@ -99,8 +97,7 @@ unsafe extern "system" fn window_proc(
 unsafe fn init_window(
     class_name: Vec<u16>,
     window_name: Option<Vec<u16>>,
-    menu: bool,
-) -> io::Result<(WindowClassHandle, WindowHandle, Option<MenuHandle>)> {
+) -> io::Result<(WindowClassHandle, WindowHandle)> {
     let wnd = winuser::WNDCLASSW {
         style: 0,
         lpfnWndProc: Some(window_proc),
@@ -140,37 +137,7 @@ unsafe fn init_window(
     }
 
     let window = WindowHandle { hwnd };
-
-    let menu = if menu {
-        // Setup menu
-        let hmenu = winuser::CreatePopupMenu();
-
-        if hmenu == 0 {
-            return Err(io::Error::last_os_error());
-        }
-
-        let menu = MenuHandle { hmenu };
-
-        let m = winuser::MENUINFO {
-            cbSize: size_of::<winuser::MENUINFO>() as u32,
-            fMask: winuser::MIM_APPLYTOSUBMENUS | winuser::MIM_STYLE,
-            dwStyle: winuser::MNS_NOTIFYBYPOS,
-            cyMax: 0,
-            hbrBack: 0,
-            dwContextHelpID: 0,
-            dwMenuData: 0,
-        };
-
-        if winuser::SetMenuInfo(hmenu, &m) == FALSE {
-            return Err(io::Error::last_os_error());
-        }
-
-        Some(menu)
-    } else {
-        None
-    };
-
-    Ok((class, window, menu))
+    Ok((class, window))
 }
 
 /// A windows application window.
@@ -178,7 +145,6 @@ unsafe fn init_window(
 /// Note: repr(C) is important here to ensure drop order.
 #[repr(C)]
 pub(crate) struct WindowLoop {
-    pub(crate) icons: Vec<IconHandle>,
     pub(crate) menu: Option<MenuHandle>,
     pub(crate) window: WindowHandle,
     window_class: WindowClassHandle,
@@ -192,7 +158,7 @@ impl WindowLoop {
         class_name: &OsStr,
         window_name: Option<&OsStr>,
         clipboard_events: bool,
-        menu: bool,
+        hmenu: Option<winuser::HMENU>,
     ) -> Result<WindowLoop, WindowError> {
         let class_name = class_name.to_wide_null();
         let window_name = window_name.map(|n| n.to_wide_null());
@@ -207,8 +173,8 @@ impl WindowLoop {
         let thread = thread::spawn(move || unsafe {
             // NB: Don't move this, it's important that the window is
             // initialized in the background thread.
-            let (window_class, window, menu) =
-                init_window(class_name, window_name, menu).map_err(WindowError::Init)?;
+            let (window_class, window) =
+                init_window(class_name, window_name).map_err(WindowError::Init)?;
 
             let mut clipboard_manager = if clipboard_events {
                 if AddClipboardFormatListener(window.hwnd) == FALSE {
@@ -222,13 +188,11 @@ impl WindowLoop {
                 None
             };
 
-            let mut menu_manager = menu
-                .as_ref()
-                .map(|menu| MenuManager::new(&events_tx, menu.hmenu));
+            let mut menu_manager = hmenu.map(|hmenu| MenuManager::new(&events_tx, hmenu));
 
             let hwnd = window.hwnd;
 
-            if return_tx.send((window_class, window, menu)).is_err() {
+            if return_tx.send((window_class, window)).is_err() {
                 return Ok(());
             }
 
@@ -281,14 +245,13 @@ impl WindowLoop {
             Ok(())
         });
 
-        let Some((window_class, window, menu)) = return_rx.await.ok() else {
+        let Some((window_class, window)) = return_rx.await.ok() else {
             thread.join().map_err(|_| WindowError::ThreadPanicked)??;
             return Err(WindowError::ThreadExited);
         };
 
         Ok(WindowLoop {
-            icons: Vec::new(),
-            menu,
+            menu: None,
             window,
             window_class,
             events_rx,

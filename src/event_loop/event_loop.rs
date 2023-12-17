@@ -5,6 +5,7 @@ use tokio::sync::mpsc;
 use crate::error::Error;
 use crate::error::ErrorKind::*;
 use crate::token::Token;
+use crate::window_loop::IconHandle;
 use crate::window_loop::{WindowEvent, WindowLoop};
 use crate::Notification;
 use crate::Result;
@@ -12,18 +13,25 @@ use crate::Result;
 use super::{Event, InputEvent};
 
 /// The event loop being run.
+#[repr(C)]
 pub struct EventLoop {
     events_rx: mpsc::UnboundedReceiver<InputEvent>,
     window_loop: WindowLoop,
+    icons: Vec<IconHandle>,
     visible: Option<u32>,
     pending: VecDeque<(u32, Notification)>,
 }
 
 impl EventLoop {
-    pub(crate) fn new(events_rx: mpsc::UnboundedReceiver<InputEvent>, window: WindowLoop) -> Self {
+    pub(crate) fn new(
+        events_rx: mpsc::UnboundedReceiver<InputEvent>,
+        window_loop: WindowLoop,
+        icons: Vec<IconHandle>,
+    ) -> Self {
         Self {
             events_rx,
-            window_loop: window,
+            window_loop,
+            icons,
             visible: None,
             pending: VecDeque::new(),
         }
@@ -65,7 +73,7 @@ impl EventLoop {
                         }
                         InputEvent::SetIcon(icon) => {
                             if self.window_loop.menu.is_some() {
-                                if let Some(icon) = self.window_loop.icons.get(icon.as_usize()) {
+                                if let Some(icon) = self.icons.get(icon.as_usize()) {
                                     self.window_loop.window.set_icon(icon).map_err(SetIcon)?;
                                 }
                             }

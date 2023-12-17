@@ -7,11 +7,46 @@ use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 
 use crate::convert::ToWide;
 
+#[repr(C)]
 pub(crate) struct MenuHandle {
-    pub(super) hmenu: winuser::HMENU,
+    pub(crate) hmenu: winuser::HMENU,
+    pub(crate) initial_icon: Option<usize>,
 }
 
 impl MenuHandle {
+    /// Construct a new menu handle.
+    pub(crate) fn new(initial_icon: Option<usize>) -> io::Result<Self> {
+        unsafe {
+            // Setup menu
+            let hmenu = winuser::CreatePopupMenu();
+
+            if hmenu == 0 {
+                return Err(io::Error::last_os_error());
+            }
+
+            let menu = Self {
+                hmenu,
+                initial_icon,
+            };
+
+            let m = winuser::MENUINFO {
+                cbSize: size_of::<winuser::MENUINFO>() as u32,
+                fMask: winuser::MIM_APPLYTOSUBMENUS | winuser::MIM_STYLE,
+                dwStyle: winuser::MNS_NOTIFYBYPOS,
+                cyMax: 0,
+                hbrBack: 0,
+                dwContextHelpID: 0,
+                dwMenuData: 0,
+            };
+
+            if winuser::SetMenuInfo(hmenu, &m) == FALSE {
+                return Err(io::Error::last_os_error());
+            }
+
+            Ok(menu)
+        }
+    }
+
     /// Add a menu entry.
     pub(crate) fn add_menu_entry(
         &self,
