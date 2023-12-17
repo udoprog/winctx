@@ -7,7 +7,8 @@ use crate::error::ErrorKind::*;
 use crate::error::{SetupIconsError, SetupMenuError};
 use crate::menu_item::MenuItemKind;
 use crate::window_loop::PopupMenuHandle;
-use crate::window_loop::{IconHandle, MenuHandle, WindowLoop};
+use crate::window_loop::{AreaHandle, IconHandle, WindowLoop};
+use crate::MenuItemId;
 use crate::PopupMenu;
 use crate::{AreaId, EventLoop, Icons, NotificationArea, Result, Sender};
 
@@ -98,14 +99,15 @@ impl WindowBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::{Icons, NotificationArea, WindowBuilder};
+    /// use winctx::{Icons, NotificationArea, WindowBuilder, ModifyArea};
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
     ///
     /// let mut icons = Icons::new();
     /// let default_icon = icons.push_buffer(ICON, 22, 22);
-    /// let area = NotificationArea::new().initial_icon(default_icon);
+    /// let area = NotificationArea::new()
+    ///     .initial(ModifyArea::new().icon(default_icon));
     ///
     /// let mut builder = WindowBuilder::new("se.tedro.Example")
     ///     .icons(icons);
@@ -137,7 +139,7 @@ impl WindowBuilder {
                 initial.push((area_id, modify));
             }
 
-            menus.push(MenuHandle::new(area_id, popup_menu));
+            menus.push(AreaHandle::new(area_id, popup_menu));
         }
 
         let mut window = WindowLoop::new(
@@ -149,7 +151,7 @@ impl WindowBuilder {
         .await
         .map_err(WindowSetup)?;
 
-        for menu in &window.menus {
+        for menu in &window.areas {
             window
                 .window
                 .add_notification(menu.area_id)
@@ -187,14 +189,19 @@ impl WindowBuilder {
 fn build_menu(menu: &mut PopupMenuHandle, popup_menu: &PopupMenu) -> Result<(), SetupMenuError> {
     for (index, item) in popup_menu.menu.iter().enumerate() {
         debug_assert!(u32::try_from(index).is_ok());
+        let menu_item_id = MenuItemId::new(index as u32);
 
         match &item.kind {
             MenuItemKind::Separator => {
-                menu.add_menu_separator(index as u32)
+                let default = popup_menu.default == Some(menu_item_id);
+
+                menu.add_menu_separator(menu_item_id, default, &item.initial)
                     .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
             }
-            MenuItemKind::MenyEntry { text, default } => {
-                menu.add_menu_entry(index as u32, text.as_str(), *default)
+            MenuItemKind::MenyEntry { text } => {
+                let default = popup_menu.default == Some(menu_item_id);
+
+                menu.add_menu_entry(menu_item_id, text.as_str(), default, &item.initial)
                     .map_err(|e| SetupMenuError::AddMenuEntry(index, e))?;
             }
         }

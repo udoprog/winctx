@@ -4,9 +4,10 @@ use tokio::sync::mpsc;
 
 use crate::error::Error;
 use crate::error::ErrorKind::*;
-use crate::token::Token;
+use crate::menu_item_id::MenuItemId;
 use crate::window_loop::IconHandle;
 use crate::window_loop::{WindowEvent, WindowLoop};
+use crate::NotificationId;
 use crate::{AreaId, Notification, Result};
 
 use super::{Event, InputEvent};
@@ -64,6 +65,17 @@ impl EventLoop {
                             let icon = modify.icon.and_then(|icon| self.icons.get(icon.as_usize()));
                             self.window_loop.window.modify_notification(area_id, icon, modify.tooltip.as_deref()).map_err(ModifyNotification)?;
                         }
+                        InputEvent::ModifyMenuItem(area_id, token, modify) => {
+                            let Some(menu) = self.window_loop.areas.get(area_id.id() as usize) else {
+                                continue;
+                            };
+
+                            let Some(popup_menu) = &menu.popup_menu else {
+                                continue;
+                            };
+
+                            popup_menu.modify_menu_item(token.id(), &modify).map_err(ModifyMenuItem)?;
+                        }
                         InputEvent::Notification(area_id, id, n) => {
                             if self.visible.is_some() {
                                 self.pending.push_back((area_id, id, n));
@@ -81,7 +93,7 @@ impl EventLoop {
                 e = self.window_loop.tick() => {
                     match e {
                         WindowEvent::MenuItemClicked(area_id, idx) => {
-                            return Ok(Event::MenuItemClicked(area_id, Token::new(idx)));
+                            return Ok(Event::MenuItemClicked(area_id, MenuItemId::new(idx)));
                         },
                         WindowEvent::Clipboard(clipboard_event) => {
                             return Ok(Event::Clipboard(clipboard_event));
@@ -92,12 +104,12 @@ impl EventLoop {
                         WindowEvent::NotificationClicked(actual_menu_id) => {
                             let (area_id, current) = self.take_notification()?;
                             debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationClicked(area_id, Token::new(current)));
+                            return Ok(Event::NotificationClicked(area_id, NotificationId::new(current)));
                         }
                         WindowEvent::NotificationDismissed(actual_menu_id) => {
                             let (area_id, current) = self.take_notification()?;
                             debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationDismissed(area_id, Token::new(current)));
+                            return Ok(Event::NotificationDismissed(area_id, NotificationId::new(current)));
                         }
                         WindowEvent::CopyData(ty, bytes) => {
                             return Ok(Event::CopyData(ty, bytes));

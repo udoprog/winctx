@@ -2,9 +2,11 @@
 
 use std::fmt;
 
+use crate::ModifyMenuItem;
+
 pub(crate) enum MenuItemKind {
     Separator,
-    MenyEntry { text: String, default: bool },
+    MenyEntry { text: String },
 }
 
 /// A menu item in the context menu.
@@ -14,6 +16,7 @@ pub(crate) enum MenuItemKind {
 /// * [`MenuItem::entry`].
 pub struct MenuItem {
     pub(crate) kind: MenuItemKind,
+    pub(crate) initial: ModifyMenuItem,
 }
 
 impl MenuItem {
@@ -30,6 +33,7 @@ impl MenuItem {
     pub fn separator() -> Self {
         Self {
             kind: MenuItemKind::Separator,
+            initial: ModifyMenuItem::default(),
         }
     }
 
@@ -49,18 +53,33 @@ impl MenuItem {
     /// use winctx::{PopupMenu, MenuItem};
     ///
     /// let mut menu = PopupMenu::new();
-    /// menu.push(MenuItem::entry("Example Application", true));
-    /// menu.push(MenuItem::entry("Exit...", false));
+    /// menu.push(MenuItem::entry("Example Application"));
+    /// menu.push(MenuItem::entry("Exit..."));
     /// ```
-    pub fn entry<T>(text: T, default: bool) -> Self
+    pub fn entry<T>(text: T) -> Self
     where
         T: fmt::Display,
     {
         Self {
             kind: MenuItemKind::MenyEntry {
                 text: text.to_string(),
-                default,
             },
+            initial: ModifyMenuItem::default(),
         }
+    }
+
+    /// Set the initial state of the menu item.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::{PopupMenu, MenuItem, ModifyMenuItem};
+    ///
+    /// let mut menu = PopupMenu::new();
+    /// menu.push(MenuItem::entry("Example Application")
+    ///    .initial(ModifyMenuItem::new().checked(true)));
+    /// ```
+    pub fn initial(self, initial: ModifyMenuItem) -> Self {
+        Self { initial, ..self }
     }
 }

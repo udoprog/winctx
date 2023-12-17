@@ -18,8 +18,8 @@ mod window_handle;
 use self::window_class_handle::WindowClassHandle;
 mod window_class_handle;
 
-pub(super) use self::menu_handle::MenuHandle;
-mod menu_handle;
+pub(super) use self::area_handle::AreaHandle;
+mod area_handle;
 
 pub(super) use self::popup_menu_handle::PopupMenuHandle;
 mod popup_menu_handle;

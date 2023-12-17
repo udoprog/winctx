@@ -28,27 +28,10 @@ pub struct Notification {
     pub(super) options: u32,
 }
 
-impl fmt::Debug for Notification {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.debug_struct("Notification")
-            .field("title", &self.title)
-            .field("message", &self.message)
-            .field("icon", &self.icon)
-            .field("timeout", &self.timeout)
-            .finish()
-    }
-}
-
 impl Notification {
     /// Create a new notification.
     pub fn new() -> Self {
-        Self {
-            message: None,
-            title: None,
-            icon: NotificationIcon::Info,
-            timeout: Some(Duration::from_secs(1)),
-            options: 0,
-        }
+        Self::default()
     }
 
     /// Set the message for the notification.
@@ -167,6 +150,30 @@ impl Notification {
         Self {
             options: self.options | NIIF_RESPECT_QUIET_TIME,
             ..self
+        }
+    }
+}
+
+impl fmt::Debug for Notification {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("Notification")
+            .field("title", &self.title)
+            .field("message", &self.message)
+            .field("icon", &self.icon)
+            .field("timeout", &self.timeout)
+            .finish()
+    }
+}
+
+impl Default for Notification {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            message: None,
+            title: None,
+            icon: NotificationIcon::Info,
+            timeout: Some(Duration::from_secs(1)),
+            options: 0,
         }
     }
 }

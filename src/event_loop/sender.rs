@@ -3,12 +3,13 @@ use tokio::sync::mpsc;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use crate::{AreaId, ModifyArea, Notification, Token};
+use crate::{AreaId, MenuItemId, ModifyArea, ModifyMenuItem, Notification};
 
 #[derive(Debug)]
 pub(crate) enum InputEvent {
     Shutdown,
     ModifyArea(AreaId, ModifyArea),
+    ModifyMenuItem(AreaId, MenuItemId, ModifyMenuItem),
     Notification(AreaId, u32, Notification),
 }
 
@@ -41,14 +42,28 @@ impl Sender {
             .send(InputEvent::ModifyArea(area_id, modify_area));
     }
 
+    /// Modify a menu item.
+    pub fn modify_menu_item(
+        &self,
+        area_id: AreaId,
+        menu_item_id: MenuItemId,
+        modify_menu_item: ModifyMenuItem,
+    ) {
+        _ = self.inner.tx.send(InputEvent::ModifyMenuItem(
+            area_id,
+            menu_item_id,
+            modify_menu_item,
+        ));
+    }
+
     /// Send the given notification.
-    pub fn notification(&self, area_id: AreaId, n: Notification) -> Token {
+    pub fn notification(&self, area_id: AreaId, n: Notification) -> MenuItemId {
         let id = self
             .inner
             .notifications
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         _ = self.inner.tx.send(InputEvent::Notification(area_id, id, n));
-        Token::new(id)
+        MenuItemId::new(id)
     }
 
     /// Cause the window to shut down.

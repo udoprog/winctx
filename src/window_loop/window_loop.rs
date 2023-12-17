@@ -25,7 +25,7 @@ use crate::window_loop::messages;
 use crate::AreaId;
 use crate::Result;
 
-use super::{ClipboardManager, MenuHandle, MenuManager, WindowClassHandle, WindowHandle};
+use super::{AreaHandle, ClipboardManager, MenuManager, WindowClassHandle, WindowHandle};
 
 #[derive(Debug)]
 pub(crate) enum WindowEvent {
@@ -148,7 +148,7 @@ unsafe fn init_window(
 /// Note: repr(C) is important here to ensure drop order.
 #[repr(C)]
 pub(crate) struct WindowLoop {
-    pub(crate) menus: Vec<MenuHandle>,
+    pub(crate) areas: Vec<AreaHandle>,
     pub(crate) window: WindowHandle,
     window_class: WindowClassHandle,
     events_rx: mpsc::UnboundedReceiver<WindowEvent>,
@@ -161,7 +161,7 @@ impl WindowLoop {
         class_name: &OsStr,
         window_name: Option<&OsStr>,
         clipboard_events: bool,
-        menus: Vec<MenuHandle>,
+        areas: Vec<AreaHandle>,
     ) -> Result<WindowLoop, WindowError> {
         let class_name = class_name.to_wide_null();
         let window_name = window_name.map(|n| n.to_wide_null());
@@ -173,9 +173,9 @@ impl WindowLoop {
         let (return_tx, return_rx) = oneshot::channel();
         let (events_tx, events_rx) = mpsc::unbounded_channel();
 
-        let mut hmenus = Vec::with_capacity(menus.len());
+        let mut hmenus = Vec::with_capacity(areas.len());
 
-        for menu in &menus {
+        for menu in &areas {
             hmenus.push(menu.popup_menu.as_ref().map(|p| p.hmenu));
         }
 
@@ -261,7 +261,7 @@ impl WindowLoop {
         };
 
         Ok(WindowLoop {
-            menus,
+            areas,
             window,
             window_class,
             events_rx,
@@ -304,7 +304,7 @@ impl WindowLoop {
 
 impl Drop for WindowLoop {
     fn drop(&mut self) {
-        for menu in &self.menus {
+        for menu in &self.areas {
             _ = self.window.delete_notification(menu.area_id);
         }
     }

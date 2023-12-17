@@ -12,10 +12,12 @@ async fn main() -> Result<()> {
     let default_icon = icons.push_buffer(ICON, 22, 22);
 
     let mut menu1 = PopupMenu::new();
-    menu1.push(MenuItem::entry("Menu 1", true));
+    let first = menu1.push(MenuItem::entry("Menu 1"));
+    menu1.set_default(first);
 
     let mut menu2 = PopupMenu::new();
-    menu2.push(MenuItem::entry("Menu 2", true));
+    let first = menu2.push(MenuItem::entry("Menu 2"));
+    menu2.set_default(first);
 
     let mut builder = WindowBuilder::new("se.tedro.Example")
         .icons(icons)

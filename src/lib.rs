@@ -39,7 +39,7 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, NotificationArea, WindowBuilder};
+//! use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, NotificationArea, WindowBuilder, ModifyArea};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
@@ -50,11 +50,10 @@
 //!
 //! let mut menu = PopupMenu::new();
 //!
-//! menu.push(MenuItem::entry("Hello World", true));
-//! let single = menu.push(MenuItem::entry("Show notification", false));
-//! let multiple = menu.push(MenuItem::entry("Show multiple notifications", false));
+//! let first = menu.push(MenuItem::entry("Example Application"));
 //! menu.push(MenuItem::separator());
-//! let quit = menu.push(MenuItem::entry("Quit", false));
+//! let quit = menu.push(MenuItem::entry("Quit"));
+//! menu.set_default(first);
 //!
 //! let mut window = WindowBuilder::new("se.tedro.Example")
 //!     .window_name("Example Application")
@@ -62,7 +61,7 @@
 //!
 //! let area_id = window.push_notification_area(
 //!     NotificationArea::new()
-//!         .initial_icon(initial_icon)
+//!         .initial(ModifyArea::new().icon(initial_icon))
 //!         .popup_menu(menu)
 //! );
 //!
@@ -89,35 +88,9 @@
 //!         Event::MenuItemClicked(area_id, token) => {
 //!             println!("Menu entry clicked: {area_id:?}: {token:?}");
 //!
-//!             if token == single {
-//!                 sender.notification(
-//!                     area_id,
-//!                     Notification::new()
-//!                         .title("This is a title")
-//!                         .message("This is a body")
-//!                         .large_icon(),
-//!                 );
-//!                 continue;
-//!             }
-//!
-//!             if token == multiple {
-//!                 sender.notification(area_id, Notification::new().message("First"));
-//!                 sender.notification(area_id, Notification::new().message("Second"));
-//!                 continue;
-//!             }
-//!
 //!             if token == quit {
 //!                 sender.shutdown();
 //!             }
-//!         }
-//!         Event::NotificationClicked(area_id, token) => {
-//!             println!("Balloon clicked: {area_id:?}: {token:?}");
-//!         }
-//!         Event::NotificationDismissed(area_id, token) => {
-//!             println!("Notification dismissed: {area_id:?}: {token:?}");
-//!         }
-//!         Event::CopyData(ty, bytes) => {
-//!             println!("Data of type {ty} copied to process: {:?}", bytes);
 //!         }
 //!         Event::Shutdown => {
 //!             println!("Window shut down");
@@ -164,8 +137,12 @@ pub use self::error::Error;
 mod error;
 
 #[doc(inline)]
-pub use self::token::Token;
-mod token;
+pub use self::menu_item_id::MenuItemId;
+mod menu_item_id;
+
+#[doc(inline)]
+pub use self::notification_id::NotificationId;
+mod notification_id;
 
 #[doc(inline)]
 pub use self::area_id::AreaId;
@@ -216,6 +193,10 @@ mod icon;
 #[doc(inline)]
 pub use self::modify_area::ModifyArea;
 mod modify_area;
+
+#[doc(inline)]
+pub use self::modify_menu_item::ModifyMenuItem;
+mod modify_menu_item;
 
 #[cfg_attr(windows, path = "windows/real.rs")]
 #[cfg_attr(not(windows), path = "windows/fake.rs")]
