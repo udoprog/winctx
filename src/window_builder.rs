@@ -5,10 +5,9 @@ use tokio::sync::mpsc;
 
 use crate::error::ErrorKind::*;
 use crate::error::{SetupIconsError, SetupMenuError};
-use crate::menu_item::MenuItemKind;
+use crate::menu_item::{MenuItem, MenuItemKind};
 use crate::window_loop::PopupMenuHandle;
 use crate::window_loop::{AreaHandle, IconHandle, WindowLoop};
-use crate::PopupMenu;
 use crate::{Area, AreaId, EventLoop, Icons, Result, Sender};
 
 /// The builder of a window context.
@@ -139,18 +138,19 @@ impl WindowBuilder {
         let mut menus = Vec::with_capacity(self.areas.len());
         let mut initial = Vec::new();
 
-        for (id, m) in self.areas.iter().enumerate() {
+        for (id, m) in self.areas.into_iter().enumerate() {
             let area_id = AreaId::new(id as u32);
 
-            let popup_menu = if let Some(popup_menu) = &m.popup_menu {
-                let mut menu = PopupMenuHandle::new().map_err(BuildPopupMenu)?;
-                build_menu(&mut menu, popup_menu).map_err(SetupMenu)?;
+            let popup_menu = if let Some(popup_menu) = m.popup_menu {
+                let mut menu =
+                    PopupMenuHandle::new(popup_menu.open_menu).map_err(BuildPopupMenu)?;
+                build_menu(&mut menu, popup_menu.menu, popup_menu.default).map_err(SetupMenu)?;
                 Some(menu)
             } else {
                 None
             };
 
-            initial.push((area_id, &m.initial));
+            initial.push((area_id, m.initial));
             menus.push(AreaHandle::new(area_id, popup_menu));
         }
 
@@ -198,20 +198,24 @@ impl WindowBuilder {
     }
 }
 
-fn build_menu(menu: &mut PopupMenuHandle, popup_menu: &PopupMenu) -> Result<(), SetupMenuError> {
-    for (index, item) in popup_menu.menu.iter().enumerate() {
+fn build_menu(
+    menu: &mut PopupMenuHandle,
+    menu_items: Vec<MenuItem>,
+    default: Option<u32>,
+) -> Result<(), SetupMenuError> {
+    for (index, item) in menu_items.into_iter().enumerate() {
         debug_assert!(u32::try_from(index).is_ok());
         let menu_item_id = index as u32;
 
-        match &item.kind {
+        match item.kind {
             MenuItemKind::Separator => {
-                let default = popup_menu.default == Some(menu_item_id);
+                let default = default == Some(menu_item_id);
 
                 menu.add_menu_separator(menu_item_id, default, &item.initial)
                     .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
             }
             MenuItemKind::String { text } => {
-                let default = popup_menu.default == Some(menu_item_id);
+                let default = default == Some(menu_item_id);
 
                 menu.add_menu_entry(menu_item_id, text.as_str(), default, &item.initial)
                     .map_err(|e| SetupMenuError::AddMenuEntry(index, e))?;

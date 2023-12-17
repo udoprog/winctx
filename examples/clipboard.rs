@@ -3,6 +3,7 @@ use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
+use winctx::event::ClipboardEvent;
 use winctx::{Event, Icons, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
@@ -36,8 +37,8 @@ async fn main() -> Result<()> {
         };
 
         match event {
-            Event::Clipboard(clipboard_event) => match clipboard_event {
-                winctx::ClipboardEvent::BitMap(bitmap) => {
+            Event::Clipboard { event } => match event {
+                ClipboardEvent::BitMap(bitmap) => {
                     let decoder = image::codecs::bmp::BmpDecoder::new_without_file_header(
                         Cursor::new(&bitmap[..]),
                     )?;
@@ -45,7 +46,7 @@ async fn main() -> Result<()> {
                     image.save("clipboard.png")?;
                     println!("Saved clipboard image to clipboard.png");
                 }
-                winctx::ClipboardEvent::Text(text) => {
+                ClipboardEvent::Text(text) => {
                     println!("Clipboard text: {text:?}");
                 }
                 _ => {}

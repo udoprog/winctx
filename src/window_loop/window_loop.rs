@@ -20,7 +20,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 use crate::convert::ToWide;
 use crate::error::ErrorKind::*;
 use crate::error::{Error, WindowError};
-use crate::event_loop::ClipboardEvent;
+use crate::event::{ClipboardEvent, MouseEvent};
 use crate::window_loop::messages;
 use crate::AreaId;
 use crate::Result;
@@ -30,15 +30,15 @@ use super::{AreaHandle, ClipboardManager, MenuManager, WindowClassHandle, Window
 #[derive(Debug)]
 pub(crate) enum WindowEvent {
     /// A meny item was clicked.
-    MenuItemClicked(AreaId, u32),
+    MenuItemClicked(AreaId, u32, MouseEvent),
     /// Shutdown was requested.
     Shutdown,
     /// Clipboard event.
     Clipboard(ClipboardEvent),
     /// The notification icon has been clicked.
-    IconClicked(AreaId),
+    IconClicked(AreaId, MouseEvent),
     /// Balloon was clicked.
-    NotificationClicked(AreaId),
+    NotificationClicked(AreaId, MouseEvent),
     /// Balloon timed out.
     NotificationDismissed(AreaId),
     /// Data copied to this process.
@@ -176,7 +176,11 @@ impl WindowLoop {
         let mut hmenus = Vec::with_capacity(areas.len());
 
         for menu in &areas {
-            hmenus.push(menu.popup_menu.as_ref().map(|p| p.hmenu));
+            hmenus.push(
+                menu.popup_menu
+                    .as_ref()
+                    .map(|p| (p.hmenu, p.open_menu.copy_data())),
+            );
         }
 
         let thread = thread::spawn(move || unsafe {

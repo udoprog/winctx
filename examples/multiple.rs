@@ -45,10 +45,10 @@ async fn main() -> Result<()> {
         };
 
         match event {
-            Event::IconClicked(area_id) => {
+            Event::IconClicked { area_id, .. } => {
                 println!("Icon clicked: {area_id:?}");
             }
-            Event::MenuItemClicked(item_id) => {
+            Event::MenuItemClicked { item_id, .. } => {
                 println!("Menu entry clicked: {item_id:?}");
 
                 if item_id == first {

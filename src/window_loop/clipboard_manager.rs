@@ -7,7 +7,8 @@ use windows_sys::Win32::UI::WindowsAndMessaging::MSG;
 
 use crate::clipboard::{Clipboard, ClipboardFormat};
 use crate::error::{ErrorKind, WindowError};
-use crate::{ClipboardEvent, Error};
+use crate::event::ClipboardEvent;
+use crate::Error;
 
 use super::WindowEvent;
 
