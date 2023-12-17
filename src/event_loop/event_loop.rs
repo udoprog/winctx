@@ -18,8 +18,8 @@ pub struct EventLoop {
     events_rx: mpsc::UnboundedReceiver<InputEvent>,
     window_loop: WindowLoop,
     icons: Vec<IconHandle>,
-    visible: Option<(AreaId, u32)>,
-    pending: VecDeque<(AreaId, u32, Notification)>,
+    visible: Option<(AreaId, NotificationId)>,
+    pending: VecDeque<(AreaId, NotificationId, Notification)>,
 }
 
 impl EventLoop {
@@ -37,7 +37,7 @@ impl EventLoop {
         }
     }
 
-    fn take_notification(&mut self) -> Result<(AreaId, u32)> {
+    fn take_notification(&mut self) -> Result<(AreaId, NotificationId)> {
         let (area_id, id) = self.visible.take().ok_or(MissingNotification)?;
 
         if let Some((area_id, id, n)) = self.pending.pop_front() {
@@ -61,7 +61,7 @@ impl EventLoop {
             tokio::select! {
                 Some(event) = self.events_rx.recv() => {
                     match event {
-                        InputEvent::ModifyArea(area_id, modify) => {
+                        InputEvent::ModifyArea { area_id, modify } => {
                             let icon = modify.icon.and_then(|icon| self.icons.get(icon.as_usize()));
                             self.window_loop.window.modify_notification(area_id, icon, modify.tooltip.as_deref()).map_err(ModifyNotification)?;
                         }
@@ -76,12 +76,12 @@ impl EventLoop {
 
                             popup_menu.modify_menu_item(item_id.id(), &modify).map_err(ModifyMenuItem)?;
                         }
-                        InputEvent::Notification(area_id, id, n) => {
+                        InputEvent::Notification { area_id, notification_id, notification } => {
                             if self.visible.is_some() {
-                                self.pending.push_back((area_id, id, n));
+                                self.pending.push_back((area_id, notification_id, notification));
                             } else {
-                                self.visible = Some((area_id, id));
-                                self.window_loop.window.send_notification(area_id, n).map_err(SendNotification)?;
+                                self.visible = Some((area_id, notification_id));
+                                self.window_loop.window.send_notification(area_id, notification).map_err(SendNotification)?;
                             }
                         }
                         InputEvent::Shutdown => {
@@ -104,12 +104,12 @@ impl EventLoop {
                         WindowEvent::NotificationClicked(actual_menu_id) => {
                             let (area_id, current) = self.take_notification()?;
                             debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationClicked(area_id, NotificationId::new(current)));
+                            return Ok(Event::NotificationClicked(area_id, current));
                         }
                         WindowEvent::NotificationDismissed(actual_menu_id) => {
                             let (area_id, current) = self.take_notification()?;
                             debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationDismissed(area_id, NotificationId::new(current)));
+                            return Ok(Event::NotificationDismissed(area_id, current));
                         }
                         WindowEvent::CopyData(ty, bytes) => {
                             return Ok(Event::CopyData(ty, bytes));

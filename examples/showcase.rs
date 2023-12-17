@@ -1,7 +1,7 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, Notification, WindowBuilder};
+use winctx::{Event, Icons, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -71,17 +71,16 @@ async fn main() -> winctx::Result<()> {
 
                 match item_id {
                     winctx::item_id!(0, 1) => {
-                        sender.notification(
-                            area_id,
-                            Notification::new()
-                                .title("This is a title")
-                                .message("This is a body")
-                                .large_icon(),
-                        );
+                        sender
+                            .notification(area_id)
+                            .title("This is a title")
+                            .message("This is a body")
+                            .large_icon()
+                            .send();
                     }
                     winctx::item_id!(0, 2) => {
-                        sender.notification(area_id, Notification::new().message("First"));
-                        sender.notification(area_id, Notification::new().message("Second"));
+                        sender.notification(area_id).message("First").send();
+                        sender.notification(area_id).message("Second").send();
                     }
                     winctx::item_id!(0, 3) => {
                         if has_tooltip {

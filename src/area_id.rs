@@ -1,4 +1,4 @@
-/// The identifier for a [`Area`].
+/// The identifier for an [`Area`].
 ///
 /// [`Area`]: crate::Area
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

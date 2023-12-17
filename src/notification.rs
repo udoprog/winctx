@@ -30,127 +30,44 @@ pub struct Notification {
 
 impl Notification {
     /// Create a new notification.
-    pub fn new() -> Self {
-        Self::default()
+    pub(super) fn new() -> Self {
+        Self {
+            message: None,
+            title: None,
+            icon: NotificationIcon::Info,
+            timeout: Some(Duration::from_secs(1)),
+            options: 0,
+        }
     }
 
-    /// Set the message for the notification.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use winctx::Notification;
-    ///
-    /// let notification = Notification::new()
-    ///     .message("This is a body");
-    /// ```
-    pub fn message<M>(self, message: M) -> Self
+    pub(super) fn message<M>(&mut self, message: M)
     where
         M: fmt::Display,
     {
-        Self {
-            message: Some(message.to_string()),
-            ..self
-        }
+        self.message = Some(message.to_string());
     }
 
-    /// Set the message for the notification.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use winctx::Notification;
-    ///
-    /// let notification = Notification::new()
-    ///     .title("This is a title")
-    ///     .message("This is a body");
-    /// ```
-    pub fn title<M>(self, title: M) -> Self
+    pub(super) fn title<M>(&mut self, title: M)
     where
         M: fmt::Display,
     {
-        Self {
-            title: Some(title.to_string()),
-            ..self
-        }
+        self.title = Some(title.to_string());
     }
 
-    /// Set the notification icon.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use winctx::Notification;
-    /// use winctx::notification::NotificationIcon;
-    ///
-    /// let notification = Notification::new()
-    ///     .message("Something dangerous")
-    ///     .icon(NotificationIcon::Warning);
-    /// ```
-    pub fn icon(self, icon: NotificationIcon) -> Self {
-        Self { icon, ..self }
+    pub(super) fn icon(&mut self, icon: NotificationIcon) {
+        self.icon = icon;
     }
 
-    /// Do not play the sound associated with a notification.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use winctx::Notification;
-    /// use winctx::notification::NotificationIcon;
-    ///
-    /// let notification = Notification::new()
-    ///     .message("Something dangerous")
-    ///     .icon(NotificationIcon::Warning)
-    ///     .no_sound();
-    /// ```
-    pub fn no_sound(self) -> Self {
-        Self {
-            options: self.options | NIIF_NOSOUND,
-            ..self
-        }
+    pub(super) fn no_sound(&mut self) {
+        self.options |= NIIF_NOSOUND;
     }
 
-    /// The large version of the icon should be used as the notification icon.
-    ///
-    /// Note that this is a hint and might only have an effect in certain
-    /// contexts.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use winctx::Notification;
-    /// use winctx::notification::NotificationIcon;
-    ///
-    /// let notification = Notification::new()
-    ///     .icon(NotificationIcon::Warning)
-    ///     .large_icon();
-    /// ```
-    pub fn large_icon(self) -> Self {
-        Self {
-            options: self.options | NIIF_LARGE_ICON,
-            ..self
-        }
+    pub(super) fn large_icon(&mut self) {
+        self.options |= NIIF_LARGE_ICON;
     }
 
-    /// The notification should not be presented if the user is in "quiet time".
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use winctx::Notification;
-    /// use winctx::notification::NotificationIcon;
-    ///
-    /// let notification = Notification::new()
-    ///     .message("Something dangerous")
-    ///     .icon(NotificationIcon::Warning)
-    ///     .respect_quiet_time();
-    /// ```
-    pub fn respect_quiet_time(self) -> Self {
-        Self {
-            options: self.options | NIIF_RESPECT_QUIET_TIME,
-            ..self
-        }
+    pub(super) fn respect_quiet_time(&mut self) {
+        self.options |= NIIF_RESPECT_QUIET_TIME;
     }
 }
 
@@ -162,18 +79,5 @@ impl fmt::Debug for Notification {
             .field("icon", &self.icon)
             .field("timeout", &self.timeout)
             .finish()
-    }
-}
-
-impl Default for Notification {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            message: None,
-            title: None,
-            icon: NotificationIcon::Info,
-            timeout: Some(Duration::from_secs(1)),
-            options: 0,
-        }
     }
 }

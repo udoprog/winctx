@@ -4,8 +4,12 @@ use crate::{AreaId, Icon, ModifyArea, PopupMenu};
 
 /// A notification area.
 ///
-/// This is opened when you click on the window icon that lives in the system
-/// tray.
+/// This is what occupies space in the notification area.
+///
+/// It can have an icon, a tooltip, and a popup menu associated with it.
+///
+/// Note that if an area doesn't have the icon, it will still be added to the
+/// notification tray but with an empty space.
 pub struct Area {
     pub(super) id: AreaId,
     pub(super) popup_menu: Option<PopupMenu>,
@@ -19,7 +23,7 @@ impl Area {
     /// notification area.
     ///
     /// To set an icon or a popup menu, use the relevant builder methods.
-    pub fn new(area_id: AreaId) -> Self {
+    pub(super) fn new(area_id: AreaId) -> Self {
         Self {
             id: area_id,
             popup_menu: None,
@@ -27,7 +31,7 @@ impl Area {
         }
     }
 
-    /// Get the area identifier.
+    /// Get the identifier for this area.
     pub fn id(&self) -> AreaId {
         self.id
     }

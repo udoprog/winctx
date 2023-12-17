@@ -125,7 +125,7 @@ pub mod window;
 mod window_loop;
 
 #[doc(inline)]
-pub use self::notification::Notification;
+use self::notification::Notification;
 pub mod notification;
 
 #[doc(inline)]
@@ -165,7 +165,7 @@ pub use self::popup_menu::PopupMenu;
 mod popup_menu;
 
 #[doc(inline)]
-pub use self::icon_buffer::IconBuffer;
+use self::icon_buffer::IconBuffer;
 mod icon_buffer;
 
 #[doc(inline)]
@@ -195,6 +195,7 @@ use self::modify_menu_item::ModifyMenuItem;
 mod modify_menu_item;
 
 use self::sender::InputEvent;
+#[doc(inline)]
 pub use self::sender::Sender;
 pub mod sender;
 

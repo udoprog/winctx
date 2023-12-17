@@ -1,5 +1,5 @@
-/// The handle for an icon.
-pub struct IconBuffer {
+/// The buffer for an image.
+pub(crate) struct IconBuffer {
     buffer: Box<[u8]>,
     width: u32,
     height: u32,
@@ -7,7 +7,7 @@ pub struct IconBuffer {
 
 impl IconBuffer {
     /// Construct an icon from a raw buffer.
-    pub fn from_buffer<T>(buffer: T, width: u32, height: u32) -> Self
+    pub(crate) fn from_buffer<T>(buffer: T, width: u32, height: u32) -> Self
     where
         T: AsRef<[u8]>,
     {
