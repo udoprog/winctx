@@ -21,8 +21,8 @@ pub enum NotificationIcon {
 
 /// A single notification.
 pub struct Notification {
-    pub(super) message: String,
     pub(super) title: Option<String>,
+    pub(super) message: Option<String>,
     pub(super) icon: NotificationIcon,
     pub(super) timeout: Option<Duration>,
     pub(super) options: u32,
@@ -31,8 +31,8 @@ pub struct Notification {
 impl fmt::Debug for Notification {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("Notification")
-            .field("message", &self.message)
             .field("title", &self.title)
+            .field("message", &self.message)
             .field("icon", &self.icon)
             .field("timeout", &self.timeout)
             .finish()
@@ -41,12 +41,9 @@ impl fmt::Debug for Notification {
 
 impl Notification {
     /// Create a new notification.
-    pub fn new<M>(message: M) -> Self
-    where
-        M: fmt::Display,
-    {
+    pub fn new() -> Self {
         Self {
-            message: message.to_string(),
+            message: None,
             title: None,
             icon: NotificationIcon::Info,
             timeout: Some(Duration::from_secs(1)),
@@ -61,12 +58,33 @@ impl Notification {
     /// ```
     /// use winctx::Notification;
     ///
-    /// let notification = Notification::new("And this is a body")
-    ///     .title("This is a title");
+    /// let notification = Notification::new()
+    ///     .message("This is a body");
     /// ```
-    pub fn title<T>(self, title: T) -> Self
+    pub fn message<M>(self, message: M) -> Self
     where
-        T: fmt::Display,
+        M: fmt::Display,
+    {
+        Self {
+            message: Some(message.to_string()),
+            ..self
+        }
+    }
+
+    /// Set the message for the notification.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::Notification;
+    ///
+    /// let notification = Notification::new()
+    ///     .title("This is a title")
+    ///     .message("This is a body");
+    /// ```
+    pub fn title<M>(self, title: M) -> Self
+    where
+        M: fmt::Display,
     {
         Self {
             title: Some(title.to_string()),
@@ -82,7 +100,8 @@ impl Notification {
     /// use winctx::Notification;
     /// use winctx::notification::NotificationIcon;
     ///
-    /// let notification = Notification::new("And this is a body")
+    /// let notification = Notification::new()
+    ///     .message("Something dangerous")
     ///     .icon(NotificationIcon::Warning);
     /// ```
     pub fn icon(self, icon: NotificationIcon) -> Self {
@@ -97,7 +116,8 @@ impl Notification {
     /// use winctx::Notification;
     /// use winctx::notification::NotificationIcon;
     ///
-    /// let notification = Notification::new("Notification body")
+    /// let notification = Notification::new()
+    ///     .message("Something dangerous")
     ///     .icon(NotificationIcon::Warning)
     ///     .no_sound();
     /// ```
@@ -119,7 +139,7 @@ impl Notification {
     /// use winctx::Notification;
     /// use winctx::notification::NotificationIcon;
     ///
-    /// let notification = Notification::new("Notification body")
+    /// let notification = Notification::new()
     ///     .icon(NotificationIcon::Warning)
     ///     .large_icon();
     /// ```
@@ -138,7 +158,8 @@ impl Notification {
     /// use winctx::Notification;
     /// use winctx::notification::NotificationIcon;
     ///
-    /// let notification = Notification::new("Notification body")
+    /// let notification = Notification::new()
+    ///     .message("Something dangerous")
     ///     .icon(NotificationIcon::Warning)
     ///     .respect_quiet_time();
     /// ```

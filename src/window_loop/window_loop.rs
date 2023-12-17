@@ -22,6 +22,7 @@ use crate::error::ErrorKind::*;
 use crate::error::{Error, WindowError};
 use crate::event_loop::ClipboardEvent;
 use crate::window_loop::messages;
+use crate::MenuId;
 use crate::Result;
 
 use super::{ClipboardManager, MenuHandle, MenuManager, WindowClassHandle, WindowHandle};
@@ -29,15 +30,15 @@ use super::{ClipboardManager, MenuHandle, MenuManager, WindowClassHandle, Window
 #[derive(Debug)]
 pub(crate) enum WindowEvent {
     /// A meny item was clicked.
-    MenuItemClicked(u32),
+    MenuItemClicked(MenuId, u32),
     /// Shutdown was requested.
     Shutdown,
     /// Clipboard event.
     Clipboard(ClipboardEvent),
     /// Balloon was clicked.
-    NotificationClicked,
+    NotificationClicked(MenuId),
     /// Balloon timed out.
-    NotificationDismissed,
+    NotificationDismissed(MenuId),
     /// Data copied to this process.
     CopyData(usize, Vec<u8>),
     /// Non-fatal error.
@@ -302,7 +303,7 @@ impl WindowLoop {
 impl Drop for WindowLoop {
     fn drop(&mut self) {
         for menu in &self.menus {
-            _ = self.window.delete_icon(menu.id);
+            _ = self.window.delete_notification(menu.menu_id);
         }
     }
 }

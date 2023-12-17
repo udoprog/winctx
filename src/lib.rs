@@ -49,7 +49,6 @@
 //! let initial_icon = icons.push_buffer(ICON, 22, 22);
 //!
 //! let mut menu = NotificationMenu::new()
-//!     .icons(icons)
 //!     .initial_icon(initial_icon);
 //!
 //! menu.push(MenuItem::entry("Hello World", true));
@@ -58,9 +57,13 @@
 //! menu.push(MenuItem::separator());
 //! let quit = menu.push(MenuItem::entry("Quit", false));
 //!
-//! let (sender, mut event_loop) = WindowBuilder::new("se.tedro.Example")
+//! let mut window = WindowBuilder::new("se.tedro.Example")
 //!     .window_name("Example Application")
-//!     .notification_menu(menu)
+//!     .icons(icons);
+//!
+//! let menu_id = window.push_notification_menu(menu);
+//!
+//! let (sender, mut event_loop) = window
 //!     .build()
 //!     .await?;
 //!
@@ -80,21 +83,23 @@
 //!     };
 //!
 //!     match event {
-//!         Event::MenuItemClicked(token) => {
-//!             println!("Menu entry clicked: {:?}", token);
+//!         Event::MenuItemClicked(menu_id, token) => {
+//!             println!("Menu entry clicked: {menu_id:?}: {token:?}");
 //!
 //!             if token == single {
 //!                 sender.notification(
-//!                     Notification::new("And this is a body")
+//!                     menu_id,
+//!                     Notification::new()
 //!                         .title("This is a title")
+//!                         .message("This is a body")
 //!                         .large_icon(),
 //!                 );
 //!                 continue;
 //!             }
 //!
 //!             if token == multiple {
-//!                 sender.notification(Notification::new("First"));
-//!                 sender.notification(Notification::new("Second"));
+//!                 sender.notification(menu_id, Notification::new().message("First"));
+//!                 sender.notification(menu_id, Notification::new().message("Second"));
 //!                 continue;
 //!             }
 //!
@@ -102,11 +107,11 @@
 //!                 sender.shutdown();
 //!             }
 //!         }
-//!         Event::NotificationClicked(token) => {
-//!             println!("Balloon clicked: {:?}", token);
+//!         Event::NotificationClicked(menu_id, token) => {
+//!             println!("Balloon clicked: {menu_id:?}: {token:?}");
 //!         }
-//!         Event::NotificationDismissed(token) => {
-//!             println!("Notification dismissed: {:?}", token);
+//!         Event::NotificationDismissed(menu_id, token) => {
+//!             println!("Notification dismissed: {menu_id:?}: {token:?}");
 //!         }
 //!         Event::CopyData(ty, bytes) => {
 //!             println!("Data of type {ty} copied to process: {:?}", bytes);
@@ -158,6 +163,10 @@ mod error;
 #[doc(inline)]
 pub use self::token::Token;
 mod token;
+
+#[doc(inline)]
+pub use self::menu_id::MenuId;
+mod menu_id;
 
 #[doc(inline)]
 pub use self::event_loop::{ClipboardEvent, Event, EventLoop, Sender};

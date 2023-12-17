@@ -5,15 +5,15 @@ use tokio::sync::mpsc;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use crate::{Icon, Notification, Token};
+use crate::{Icon, MenuId, Notification, Token};
 
 #[derive(Debug)]
 pub(crate) enum InputEvent {
     Shutdown,
-    ClearTooltip,
-    SetTooltip(String),
-    SetIcon(Icon),
-    Notification(u32, Notification),
+    ClearTooltip(MenuId),
+    SetTooltip(MenuId, String),
+    SetIcon(MenuId, Icon),
+    Notification(MenuId, u32, Notification),
 }
 
 struct Inner {
@@ -38,33 +38,33 @@ impl Sender {
     }
 
     /// Set the icon of the context menu.
-    pub fn set_icon(&self, icon: Icon) {
-        _ = self.inner.tx.send(InputEvent::SetIcon(icon));
+    pub fn set_icon(&self, menu_id: MenuId, icon: Icon) {
+        _ = self.inner.tx.send(InputEvent::SetIcon(menu_id, icon));
     }
 
     /// Clear the tooltip of the context menu.
-    pub fn clear_tooltip(&self) {
-        _ = self.inner.tx.send(InputEvent::ClearTooltip);
+    pub fn clear_tooltip(&self, menu_id: MenuId) {
+        _ = self.inner.tx.send(InputEvent::ClearTooltip(menu_id));
     }
 
     /// Set the tooltip of the context menu.
-    pub fn set_tooltip<E>(&self, message: E)
+    pub fn set_tooltip<E>(&self, menu_id: MenuId, message: E)
     where
         E: fmt::Display,
     {
         _ = self
             .inner
             .tx
-            .send(InputEvent::SetTooltip(message.to_string()));
+            .send(InputEvent::SetTooltip(menu_id, message.to_string()));
     }
 
     /// Send the given notification.
-    pub fn notification(&self, n: Notification) -> Token {
+    pub fn notification(&self, menu_id: MenuId, n: Notification) -> Token {
         let id = self
             .inner
             .notifications
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        _ = self.inner.tx.send(InputEvent::Notification(id, n));
+        _ = self.inner.tx.send(InputEvent::Notification(menu_id, id, n));
         Token::new(id)
     }
 

@@ -6,25 +6,25 @@ use windows_sys::Win32::UI::Shell as shellapi;
 
 use crate::convert::copy_wstring_lossy;
 use crate::notification::NotificationIcon;
-use crate::Notification;
+use crate::{MenuId, Notification};
 
-use super::{messages, IconHandle, MenuId};
+use super::{messages, IconHandle};
 
 pub(crate) struct WindowHandle {
     pub(super) hwnd: HWND,
 }
 
 impl WindowHandle {
-    fn new_nid(&self, id: MenuId) -> shellapi::NOTIFYICONDATAW {
+    fn new_nid(&self, menu_id: MenuId) -> shellapi::NOTIFYICONDATAW {
         let mut nid: shellapi::NOTIFYICONDATAW = unsafe { MaybeUninit::zeroed().assume_init() };
         nid.cbSize = size_of::<shellapi::NOTIFYICONDATAW>() as u32;
         nid.hWnd = self.hwnd;
-        nid.uID = id.id();
+        nid.uID = menu_id.id();
         nid
     }
 
-    pub(crate) fn add_icon(&mut self, id: MenuId) -> io::Result<()> {
-        let mut nid = self.new_nid(id);
+    pub(crate) fn add_notification(&mut self, menu_id: MenuId) -> io::Result<()> {
+        let mut nid = self.new_nid(menu_id);
         nid.uFlags = shellapi::NIF_MESSAGE;
         nid.uCallbackMessage = messages::ICON_ID;
 
@@ -37,9 +37,9 @@ impl WindowHandle {
         Ok(())
     }
 
-    pub(crate) fn delete_icon(&mut self, id: MenuId) -> io::Result<()> {
+    pub(crate) fn delete_notification(&mut self, menu_id: MenuId) -> io::Result<()> {
         let result = unsafe {
-            let mut nid = self.new_nid(id);
+            let mut nid = self.new_nid(menu_id);
             nid.uFlags = shellapi::NIF_ICON;
             shellapi::Shell_NotifyIconW(shellapi::NIM_DELETE, &nid)
         };
@@ -52,8 +52,8 @@ impl WindowHandle {
     }
 
     /// Clear out tooltip.
-    pub(crate) fn clear_tooltip(&self, id: MenuId) -> io::Result<()> {
-        let mut nid = self.new_nid(id);
+    pub(crate) fn clear_tooltip(&self, menu_id: MenuId) -> io::Result<()> {
+        let mut nid = self.new_nid(menu_id);
         nid.uFlags = shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
         copy_wstring_lossy(&mut nid.szTip, "");
 
@@ -67,8 +67,8 @@ impl WindowHandle {
     }
 
     /// Set tooltip.
-    pub(crate) fn set_tooltip(&self, id: MenuId, tooltip: &str) -> io::Result<()> {
-        let mut nid = self.new_nid(id);
+    pub(crate) fn set_tooltip(&self, menu_id: MenuId, tooltip: &str) -> io::Result<()> {
+        let mut nid = self.new_nid(menu_id);
         nid.uFlags = shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
         copy_wstring_lossy(&mut nid.szTip, tooltip);
 
@@ -82,9 +82,9 @@ impl WindowHandle {
     }
 
     /// Set context icon.
-    pub(crate) fn set_icon(&mut self, id: MenuId, icon: &IconHandle) -> io::Result<()> {
+    pub(crate) fn set_icon(&mut self, menu_id: MenuId, icon: &IconHandle) -> io::Result<()> {
         let result = unsafe {
-            let mut nid = self.new_nid(id);
+            let mut nid = self.new_nid(menu_id);
             nid.uFlags = shellapi::NIF_ICON;
             nid.hIcon = icon.hicon;
             shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid)
@@ -98,12 +98,7 @@ impl WindowHandle {
     }
 
     /// Send a notification.
-    pub(crate) fn send_notification(
-        &self,
-        id: MenuId,
-        token: u32,
-        n: Notification,
-    ) -> io::Result<()> {
+    pub(crate) fn send_notification(&self, menu_id: MenuId, n: Notification) -> io::Result<()> {
         /// Convert into a flag.
         fn into_flags(options: u32, icon: NotificationIcon) -> u32 {
             let icon = match icon {
@@ -115,21 +110,22 @@ impl WindowHandle {
             options | icon
         }
 
-        let mut nid = self.new_nid(id);
+        let mut nid = self.new_nid(menu_id);
         nid.uFlags = shellapi::NIF_INFO;
 
         if let Some(title) = n.title {
             copy_wstring_lossy(&mut nid.szInfoTitle, title.as_str());
         }
 
-        copy_wstring_lossy(&mut nid.szInfo, n.message.as_str());
+        if let Some(message) = n.message {
+            copy_wstring_lossy(&mut nid.szInfo, message.as_str());
+        }
 
         if let Some(timeout) = n.timeout {
             nid.Anonymous.uTimeout = timeout.as_millis() as u32;
         }
 
         nid.dwInfoFlags = into_flags(n.options, n.icon);
-        nid.uCallbackMessage = token;
 
         let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
 

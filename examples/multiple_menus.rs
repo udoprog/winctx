@@ -1,9 +1,8 @@
-use std::io::Cursor;
 use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, NotificationMenu, WindowBuilder};
+use winctx::{Event, Icons, MenuItem, NotificationMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -12,13 +11,18 @@ async fn main() -> Result<()> {
     let mut icons = Icons::new();
     let default_icon = icons.push_buffer(ICON, 22, 22);
 
-    let menu = NotificationMenu::new().initial_icon(default_icon);
+    let mut menu1 = NotificationMenu::new().initial_icon(default_icon);
+    menu1.push(MenuItem::entry("Menu 1", true));
+
+    let mut menu2 = NotificationMenu::new().initial_icon(default_icon);
+    menu2.push(MenuItem::entry("Menu 2", true));
 
     let mut builder = WindowBuilder::new("Example Application")
         .icons(icons)
         .clipboard_events(true);
 
-    builder.push_notification_menu(menu);
+    let menu1 = builder.push_notification_menu(menu1);
+    let menu2 = builder.push_notification_menu(menu2);
 
     let (sender, mut event_loop) = builder.build().await?;
 
@@ -38,20 +42,17 @@ async fn main() -> Result<()> {
         };
 
         match event {
-            Event::Clipboard(clipboard_event) => match clipboard_event {
-                winctx::ClipboardEvent::BitMap(bitmap) => {
-                    let decoder = image::codecs::bmp::BmpDecoder::new_without_file_header(
-                        Cursor::new(&bitmap[..]),
-                    )?;
-                    let image = image::DynamicImage::from_decoder(decoder)?;
-                    image.save("clipboard.png")?;
-                    println!("Saved clipboard image to clipboard.png");
+            Event::MenuItemClicked(menu_id, token) => {
+                println!("Menu entry clicked: {menu_id:?}: {token:?}");
+
+                if menu_id == menu1 {
+                    println!("Menu 1 clicked");
                 }
-                winctx::ClipboardEvent::Text(text) => {
-                    println!("Clipboard text: {text:?}");
+
+                if menu_id == menu2 {
+                    println!("Menu 2 clicked");
                 }
-                _ => {}
-            },
+            }
             Event::Shutdown => {
                 println!("Window shut down");
                 break;

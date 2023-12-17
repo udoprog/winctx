@@ -22,11 +22,11 @@ async fn main() -> winctx::Result<()> {
         .window_name("Example Application")
         .icons(icons);
 
-    let menu = window.push_notification_menu(menu);
+    let menu_id = window.push_notification_menu(menu);
 
     let (sender, mut event_loop) = window.build().await?;
 
-    sender.set_tooltip("Hello!");
+    sender.set_tooltip(menu_id, "Hello!");
     let mut has_tooltip = true;
 
     let mut ctrl_c = pin!(ctrl_c());
@@ -45,21 +45,23 @@ async fn main() -> winctx::Result<()> {
         };
 
         match event {
-            Event::MenuItemClicked(token) => {
-                println!("Menu entry clicked: {:?}", token);
+            Event::MenuItemClicked(menu_id, token) => {
+                println!("Menu entry clicked: {menu_id:?}: {token:?}");
 
                 if token == single {
                     sender.notification(
-                        Notification::new("And this is a body")
+                        menu_id,
+                        Notification::new()
                             .title("This is a title")
+                            .message("This is a body")
                             .large_icon(),
                     );
                     continue;
                 }
 
                 if token == multiple {
-                    sender.notification(Notification::new("First"));
-                    sender.notification(Notification::new("Second"));
+                    sender.notification(menu_id, Notification::new().message("First"));
+                    sender.notification(menu_id, Notification::new().message("Second"));
                     continue;
                 }
 
@@ -69,19 +71,19 @@ async fn main() -> winctx::Result<()> {
 
                 if token == tooltip {
                     if has_tooltip {
-                        sender.clear_tooltip();
+                        sender.clear_tooltip(menu_id);
                     } else {
-                        sender.set_tooltip("This is a tooltip!");
+                        sender.set_tooltip(menu_id, "This is a tooltip!");
                     }
 
                     has_tooltip = !has_tooltip;
                 }
             }
-            Event::NotificationClicked(token) => {
-                println!("Balloon clicked: {:?}", token);
+            Event::NotificationClicked(menu_id, token) => {
+                println!("Balloon clicked: {menu_id:?}: {token:?}");
             }
-            Event::NotificationDismissed(token) => {
-                println!("Notification dismissed: {:?}", token);
+            Event::NotificationDismissed(menu_id, token) => {
+                println!("Notification dismissed: {menu_id:?}: {token:?}");
             }
             Event::CopyData(ty, bytes) => {
                 println!("Data of type {ty} copied to process: {:?}", bytes);

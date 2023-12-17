@@ -5,7 +5,9 @@ use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::Foundation::FALSE;
 use windows_sys::Win32::UI::Shell as shellapi;
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
-use windows_sys::Win32::UI::WindowsAndMessaging::MSG;
+use windows_sys::Win32::UI::WindowsAndMessaging::{HMENU, MSG};
+
+use crate::MenuId;
 
 use super::messages;
 use super::WindowEvent;
@@ -27,18 +29,28 @@ impl<'a> MenuManager<'a> {
     pub(super) unsafe fn dispatch(&mut self, msg: &MSG) -> bool {
         match msg.message {
             messages::ICON_ID => {
+                let menu_id = MenuId::new(msg.wParam as u32);
+
                 match msg.lParam as u32 {
                     // Balloon clicked.
                     shellapi::NIN_BALLOONUSERCLICK => {
-                        _ = self.events_tx.send(WindowEvent::NotificationClicked);
+                        _ = self
+                            .events_tx
+                            .send(WindowEvent::NotificationClicked(menu_id));
                         return true;
                     }
                     // Balloon timed out.
                     shellapi::NIN_BALLOONTIMEOUT => {
-                        _ = self.events_tx.send(WindowEvent::NotificationDismissed);
+                        _ = self
+                            .events_tx
+                            .send(WindowEvent::NotificationDismissed(menu_id));
                         return true;
                     }
                     winuser::WM_LBUTTONUP | winuser::WM_RBUTTONUP => {
+                        let Some(&hmenu) = self.hmenus.get(menu_id.id() as usize) else {
+                            return true;
+                        };
+
                         let mut p = MaybeUninit::zeroed();
 
                         if winuser::GetCursorPos(p.as_mut_ptr()) == FALSE {
@@ -50,7 +62,7 @@ impl<'a> MenuManager<'a> {
                         winuser::SetForegroundWindow(msg.hwnd);
 
                         winuser::TrackPopupMenu(
-                            self.hmenus[0],
+                            hmenu,
                             0,
                             p.x,
                             p.y,
@@ -65,13 +77,16 @@ impl<'a> MenuManager<'a> {
                 }
             }
             winuser::WM_MENUCOMMAND => {
-                let menu_id = winuser::GetMenuItemID(self.hmenus[0], msg.wParam as i32) as i32;
+                let hmenu = msg.lParam as HMENU;
 
-                if menu_id != -1 {
-                    _ = self
-                        .events_tx
-                        .send(WindowEvent::MenuItemClicked(menu_id as u32));
-                }
+                let Some(menu_id) = self.hmenus.iter().position(|h| *h == hmenu) else {
+                    return true;
+                };
+
+                _ = self.events_tx.send(WindowEvent::MenuItemClicked(
+                    MenuId::new(menu_id as u32),
+                    msg.wParam as u32,
+                ));
 
                 return true;
             }

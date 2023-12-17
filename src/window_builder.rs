@@ -6,11 +6,8 @@ use tokio::sync::mpsc;
 use crate::error::ErrorKind::*;
 use crate::error::{SetupIconsError, SetupMenuError};
 use crate::menu_item::MenuItemKind;
-use crate::window_loop::{IconHandle, MenuHandle, MenuId, WindowLoop};
-use crate::Icons;
-use crate::NotificationMenu;
-use crate::Result;
-use crate::{EventLoop, Sender};
+use crate::window_loop::{IconHandle, MenuHandle, WindowLoop};
+use crate::{EventLoop, Icons, MenuId, NotificationMenu, Result, Sender};
 
 /// The builder of a window context.
 pub struct WindowBuilder {
@@ -104,7 +101,7 @@ impl WindowBuilder {
         for (id, m) in self.notification_menus.iter().enumerate() {
             let initial_icon = m.initial_icon.map(|i| i.as_usize());
             let menu = MenuHandle::new(MenuId::new(id as u32), initial_icon).map_err(BuildMenu)?;
-            self.setup_menu(&menu, m).map_err(SetupMenu)?;
+            self.build_menu(&menu, m).map_err(SetupMenu)?;
             menus.push(menu);
         }
 
@@ -118,12 +115,15 @@ impl WindowBuilder {
         .map_err(WindowSetup)?;
 
         for menu in &window.menus {
-            window.window.add_icon(menu.id).map_err(AddIcon)?;
+            window
+                .window
+                .add_notification(menu.menu_id)
+                .map_err(AddIcon)?;
 
             if let Some(icon) = menu.initial_icon {
                 window
                     .window
-                    .set_icon(menu.id, &icons[icon])
+                    .set_icon(menu.menu_id, &icons[icon])
                     .map_err(SetIcon)?;
             }
         }
@@ -146,7 +146,7 @@ impl WindowBuilder {
         Ok(handles)
     }
 
-    fn setup_menu(
+    fn build_menu(
         &self,
         menu: &MenuHandle,
         notification_menu: &NotificationMenu,

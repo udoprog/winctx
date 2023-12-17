@@ -75,12 +75,12 @@ async fn main() -> winctx::Result<()> {
         };
 
         match event {
-            Event::MenuItemClicked(token) => {
-                println!("Menu entry clicked: {:?}", token);
+            Event::MenuItemClicked(menu_id, token) => {
+                println!("Menu entry clicked: {menu_id:?}: {token:?}");
 
                 if token == notification {
                     sender.notification(
-                        Notification::new("And this is a body").title("This is a title"),
+                        Notification::new("This is a body").title("This is a title"),
                     );
                     continue;
                 }
