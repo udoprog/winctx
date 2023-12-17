@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 use crate::error::Error;
 use crate::error::ErrorKind::*;
 use crate::token::Token;
-use crate::window_loop::{Icon, WindowEvent, WindowLoop};
+use crate::window_loop::{WindowEvent, WindowLoop};
 use crate::Notification;
 use crate::Result;
 
@@ -13,26 +13,17 @@ use super::{Event, InputEvent};
 
 /// The event loop being run.
 pub struct EventLoop {
-    icon: Option<Icon>,
-    icon_error: Option<Icon>,
     events_rx: mpsc::UnboundedReceiver<InputEvent>,
-    window: WindowLoop,
+    window_loop: WindowLoop,
     visible: Option<u32>,
     pending: VecDeque<(u32, Notification)>,
 }
 
 impl EventLoop {
-    pub(crate) fn new(
-        icon: Option<Icon>,
-        icon_error: Option<Icon>,
-        events_rx: mpsc::UnboundedReceiver<InputEvent>,
-        window: WindowLoop,
-    ) -> Self {
+    pub(crate) fn new(events_rx: mpsc::UnboundedReceiver<InputEvent>, window: WindowLoop) -> Self {
         Self {
-            icon,
-            icon_error,
             events_rx,
-            window,
+            window_loop: window,
             visible: None,
             pending: VecDeque::new(),
         }
@@ -43,7 +34,8 @@ impl EventLoop {
 
         if let Some((id, n)) = self.pending.pop_front() {
             self.visible = Some(id);
-            self.window
+            self.window_loop
+                .window
                 .send_notification(id, n)
                 .map_err(SendNotification)?;
         }
@@ -53,7 +45,7 @@ impl EventLoop {
 
     /// Tick the event loop.
     pub async fn tick(&mut self) -> Result<Event> {
-        if self.window.is_closed() {
+        if self.window_loop.is_closed() {
             return Err(Error::new(WindowClosed));
         };
 
@@ -62,17 +54,21 @@ impl EventLoop {
                 Some(event) = self.events_rx.recv() => {
                     match event {
                         InputEvent::Cleared => {
-                            self.window.set_tooltip("").map_err(SetTooltip)?;
+                            if self.window_loop.menu.is_some() {
+                                self.window_loop.window.set_tooltip("").map_err(SetTooltip)?;
 
-                            if let Some(icon) = &self.icon {
-                                self.window.set_icon(icon.clone()).map_err(SetIcon)?;
+                                if let Some(icon) = &self.window_loop.icons.icon {
+                                    self.window_loop.window.set_icon(icon.clone()).map_err(SetIcon)?;
+                                }
                             }
                         }
                         InputEvent::Errored(message) => {
-                            self.window.set_tooltip(&message).map_err(SetTooltip)?;
+                            if self.window_loop.menu.is_some() {
+                                self.window_loop.window.set_tooltip(&message).map_err(SetTooltip)?;
 
-                            if let Some(icon) = &self.icon_error {
-                                self.window.set_icon(icon.clone()).map_err(SetIcon)?;
+                                if let Some(icon) = &self.window_loop.icons.error_icon {
+                                    self.window_loop.window.set_icon(icon.clone()).map_err(SetIcon)?;
+                                }
                             }
                         }
                         InputEvent::Notification(id, n) => {
@@ -80,16 +76,16 @@ impl EventLoop {
                                 self.pending.push_back((id, n));
                             } else {
                                 self.visible = Some(id);
-                                self.window.send_notification(id, n).map_err(SendNotification)?;
+                                self.window_loop.window.send_notification(id, n).map_err(SendNotification)?;
                             }
                         }
                         InputEvent::Shutdown => {
-                            self.window.join()?;
+                            self.window_loop.join()?;
                             return Ok(Event::Shutdown);
                         }
                     }
                 }
-                e = self.window.tick() => {
+                e = self.window_loop.tick() => {
                     match e {
                         WindowEvent::MenuItemClicked(idx) => {
                             return Ok(Event::MenuItemClicked(Token::new(idx)));
@@ -112,12 +108,19 @@ impl EventLoop {
                             return Ok(Event::Error(error));
                         }
                         WindowEvent::Shutdown => {
-                            self.window.join()?;
+                            self.window_loop.join()?;
                             return Ok(Event::Shutdown);
                         }
                     }
                 }
             }
         }
+    }
+}
+
+impl Drop for EventLoop {
+    fn drop(&mut self) {
+        _ = self.window_loop.window.delete_icon();
+        _ = self.window_loop.join();
     }
 }

@@ -7,7 +7,7 @@ const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder = ContextBuilder::new("Example Application").class_name("se.tedro.Example");
+    let mut builder = ContextBuilder::new("se.tedro.Example").window_name("Example Application");
     builder.set_icon(ICON, 22, 22);
 
     builder.push_menu_item(MenuItem::entry("Hello World", true));

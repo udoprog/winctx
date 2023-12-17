@@ -65,7 +65,7 @@ impl Clipboard {
 impl Drop for Clipboard {
     fn drop(&mut self) {
         unsafe {
-            let _ = CloseClipboard();
+            _ = CloseClipboard();
         }
     }
 }
@@ -125,7 +125,7 @@ impl Drop for Lock<'_> {
     fn drop(&mut self) {
         // SAFETY: Lock has been correctly acquired.
         unsafe {
-            let _ = GlobalUnlock(self.handle);
+            _ = GlobalUnlock(self.handle);
         }
     }
 }

@@ -5,6 +5,13 @@ use std::ffi::{OsStr, OsString};
 use crate::windows::{OsStrExt, OsStringExt};
 use crate::Result;
 
+/// Copy a wide string from a source to a destination.
+pub(crate) fn copy_wstring(dest: &mut [u16], source: &str) {
+    let source = source.to_wide_null();
+    let len = usize::min(source.len(), dest.len());
+    dest[..len].copy_from_slice(&source[..len]);
+}
+
 pub(crate) trait ToWide {
     /// Encode into a wide string.
     fn to_wide(&self) -> Vec<u16>;

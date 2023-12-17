@@ -36,10 +36,8 @@ impl fmt::Display for Error {
             ErrorKind::SetRegistryKey(..) => write!(f, "Failed to set registry key"),
             ErrorKind::CurrentExecutable(..) => write!(f, "Could not get current executable"),
             ErrorKind::SetupMenu(..) => write!(f, "Failed to setup menu"),
-            ErrorKind::BuildIcon(..) => write!(f, "Failed to construct icon"),
-            ErrorKind::BuildErrorIcon(..) => write!(f, "Failed to construct error icon"),
-            ErrorKind::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
             ErrorKind::SetTooltip(..) => write!(f, "Failed to set tooltip message"),
+            ErrorKind::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
             ErrorKind::CreateMutex(..) => write!(f, "Failed to construct mutex"),
             ErrorKind::OpenRegistryKey(..) => write!(f, "Failed to open registry key"),
@@ -63,10 +61,8 @@ impl std::error::Error for Error {
             ErrorKind::SetRegistryKey(error) => Some(error),
             ErrorKind::CurrentExecutable(error) => Some(error),
             ErrorKind::SetupMenu(error) => Some(error),
-            ErrorKind::BuildIcon(error) => Some(error),
-            ErrorKind::BuildErrorIcon(error) => Some(error),
-            ErrorKind::SetIcon(error) => Some(error),
             ErrorKind::SetTooltip(error) => Some(error),
+            ErrorKind::SetIcon(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
             ErrorKind::CreateMutex(error) => Some(error),
             ErrorKind::OpenRegistryKey(error) => Some(error),
@@ -80,11 +76,11 @@ impl std::error::Error for Error {
 #[derive(Debug)]
 pub(super) enum WindowError {
     Init(io::Error),
-    DeleteIcon(io::Error),
     AddClipboardFormatListener(io::Error),
     OpenClipboard(io::Error),
     GetClipboardData(io::Error),
     LockClipboardData(io::Error),
+    ClassNameTooLong(usize),
     ThreadPanicked,
     ThreadExited,
 }
@@ -93,13 +89,16 @@ impl fmt::Display for WindowError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             WindowError::Init(..) => write!(f, "Failed to initialize window"),
-            WindowError::DeleteIcon(..) => write!(f, "Failed to delete icon"),
             WindowError::AddClipboardFormatListener(..) => {
                 write!(f, "Failed to add clipboard format listener")
             }
             WindowError::OpenClipboard(..) => write!(f, "Failed to open clipboard"),
             WindowError::GetClipboardData(..) => write!(f, "Failed to get clipboard data"),
             WindowError::LockClipboardData(..) => write!(f, "Failed to lock clipboard data"),
+            WindowError::ClassNameTooLong(len) => write!(
+                f,
+                "Class name of length {len} is longer than maximum of 256 bytes"
+            ),
             WindowError::ThreadPanicked => write!(f, "Window thread panicked"),
             WindowError::ThreadExited => write!(f, "Window thread unexpectedly exited"),
         }
@@ -110,11 +109,11 @@ impl std::error::Error for WindowError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             WindowError::Init(error) => Some(error),
-            WindowError::DeleteIcon(error) => Some(error),
             WindowError::AddClipboardFormatListener(error) => Some(error),
             WindowError::OpenClipboard(error) => Some(error),
             WindowError::GetClipboardData(error) => Some(error),
             WindowError::LockClipboardData(error) => Some(error),
+            WindowError::ClassNameTooLong(..) => None,
             WindowError::ThreadPanicked => None,
             WindowError::ThreadExited => None,
         }
@@ -131,10 +130,8 @@ pub(super) enum ErrorKind {
     SetRegistryKey(io::Error),
     CurrentExecutable(io::Error),
     SetupMenu(SetupMenuError),
-    BuildIcon(io::Error),
-    BuildErrorIcon(io::Error),
-    SetIcon(io::Error),
     SetTooltip(io::Error),
+    SetIcon(io::Error),
     SendNotification(io::Error),
     CreateMutex(io::Error),
     OpenRegistryKey(io::Error),
@@ -149,17 +146,25 @@ pub(super) enum ErrorKind {
 pub(super) enum SetupMenuError {
     AddMenuEntry(usize, io::Error),
     AddMenuSeparator(usize, io::Error),
+    AddIcon(io::Error),
+    SetIcon(io::Error),
+    BuildIcon(io::Error),
+    BuildErrorIcon(io::Error),
 }
 
 impl fmt::Display for SetupMenuError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SetupMenuError::AddMenuEntry(index, ..) => {
+            Self::AddMenuEntry(index, ..) => {
                 write!(f, "Failed to add menu entry {index}")
             }
-            SetupMenuError::AddMenuSeparator(index, ..) => {
+            Self::AddMenuSeparator(index, ..) => {
                 write!(f, "Failed to add menu separator {index}")
             }
+            Self::AddIcon(..) => write!(f, "Failed to add icon"),
+            Self::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
+            Self::BuildIcon(..) => write!(f, "Failed to construct icon"),
+            Self::BuildErrorIcon(..) => write!(f, "Failed to construct error icon"),
         }
     }
 }
@@ -167,8 +172,12 @@ impl fmt::Display for SetupMenuError {
 impl std::error::Error for SetupMenuError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            SetupMenuError::AddMenuEntry(_, error) => Some(error),
-            SetupMenuError::AddMenuSeparator(_, error) => Some(error),
+            Self::AddMenuEntry(_, error) => Some(error),
+            Self::AddMenuSeparator(_, error) => Some(error),
+            Self::AddIcon(error) => Some(error),
+            Self::SetIcon(error) => Some(error),
+            Self::BuildIcon(error) => Some(error),
+            Self::BuildErrorIcon(error) => Some(error),
         }
     }
 }

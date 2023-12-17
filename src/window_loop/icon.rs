@@ -1,5 +1,4 @@
 use std::io;
-use std::sync::Arc;
 
 use windows_sys::Win32::Foundation::TRUE;
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
@@ -7,7 +6,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{DestroyIcon, HICON};
 
 #[derive(Clone)]
 pub(crate) struct Icon {
-    inner: Arc<IconHandle>,
+    pub(super) hicon: HICON,
 }
 
 impl Icon {
@@ -28,7 +27,7 @@ impl Icon {
 
         let icon_data = &buffer[offset as usize..];
 
-        let handle = unsafe {
+        let hicon = unsafe {
             winuser::CreateIconFromResourceEx(
                 icon_data.as_ptr(),
                 icon_data.len() as u32,
@@ -40,29 +39,19 @@ impl Icon {
             )
         };
 
-        if handle == 0 {
+        if hicon == 0 {
             return Err(io::Error::last_os_error());
         }
 
-        Ok(Self {
-            inner: Arc::new(IconHandle { handle }),
-        })
-    }
-
-    pub(super) fn as_raw_handle(&self) -> HICON {
-        self.inner.handle
+        Ok(Self { hicon })
     }
 }
 
-struct IconHandle {
-    handle: HICON,
-}
-
-impl Drop for IconHandle {
+impl Drop for Icon {
     fn drop(&mut self) {
         // SAFETY: icon handle is owned by this struct.
         unsafe {
-            DestroyIcon(self.handle);
+            DestroyIcon(self.hicon);
         }
     }
 }

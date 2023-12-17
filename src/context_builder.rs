@@ -1,4 +1,5 @@
-use std::fmt;
+use std::ffi::OsStr;
+use std::ffi::OsString;
 
 use tokio::sync::mpsc;
 
@@ -18,24 +19,33 @@ pub(super) struct Icon {
 
 /// The builder of a window context.
 pub struct ContextBuilder {
-    name: String,
+    class_name: OsString,
+    window_name: Option<OsString>,
     menu: Vec<MenuItem>,
-    class_name: Option<String>,
     icon: Option<Icon>,
     error_icon: Option<Icon>,
     clipboard_events: bool,
 }
 
 impl ContextBuilder {
-    /// Construct a new event loop where the application has the specified name.
-    pub fn new<N>(name: N) -> Self
+    /// Construct a new event loop where the window has the specified class
+    /// name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::ContextBuilder;
+    ///
+    /// let mut builder = ContextBuilder::new("Example Application");
+    /// ```
+    pub fn new<N>(class_name: N) -> Self
     where
-        N: fmt::Display,
+        N: AsRef<OsStr>,
     {
         Self {
-            name: name.to_string(),
+            class_name: class_name.as_ref().to_owned(),
+            window_name: None,
             menu: Vec::new(),
-            class_name: None,
             icon: None,
             error_icon: None,
             clipboard_events: false,
@@ -59,22 +69,22 @@ impl ContextBuilder {
         }
     }
 
-    /// Modify the class name to use for the application.
+    /// Modify the window name for use in the application.
     ///
     /// # Examples
     ///
     /// ```
     /// use winctx::ContextBuilder;
     ///
-    /// let mut builder = ContextBuilder::new("Example Application")
-    ///     .class_name("se.tedro.Example");
+    /// let mut builder = ContextBuilder::new("se.tedro.Example")
+    ///     .window_name("Example Application");
     /// ```
-    pub fn class_name<C>(self, class_name: C) -> Self
+    pub fn window_name<N>(self, window_name: N) -> Self
     where
-        C: fmt::Display,
+        N: AsRef<OsStr>,
     {
         Self {
-            class_name: Some(class_name.to_string()),
+            window_name: Some(window_name.as_ref().to_owned()),
             ..self
         }
     }
@@ -110,57 +120,67 @@ impl ContextBuilder {
     pub async fn build(self) -> Result<(Sender, EventLoop)> {
         let (events_tx, events_rx) = mpsc::unbounded_channel();
 
-        let class_name = self.class_name.as_deref().unwrap_or(self.name.as_str());
-
-        let mut window = WindowLoop::new(class_name, &self.name, self.clipboard_events)
-            .await
-            .map_err(WindowSetup)?;
+        let mut window = WindowLoop::new(
+            &self.class_name,
+            self.window_name.as_deref(),
+            self.clipboard_events,
+            !self.menu.is_empty(),
+        )
+        .await
+        .map_err(WindowSetup)?;
 
         self.setup_menu(&mut window).map_err(SetupMenu)?;
 
-        let icon = match self.icon {
-            Some(icon) => Some(
-                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
-                    .map_err(BuildIcon)?,
-            ),
-            None => None,
-        };
-
-        if let Some(icon) = &icon {
-            window.set_icon(icon.clone()).map_err(SetIcon)?;
-        }
-
-        let error_icon = match self.error_icon {
-            Some(icon) => Some(
-                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
-                    .map_err(BuildErrorIcon)?,
-            ),
-            None => None,
-        };
-
-        let event_loop = EventLoop::new(icon, error_icon, events_rx, window);
+        let event_loop = EventLoop::new(events_rx, window);
         let system = Sender::new(events_tx);
         Ok((system, event_loop))
     }
 
-    fn setup_menu(&self, window: &mut WindowLoop) -> Result<(), SetupMenuError> {
+    fn setup_menu(&self, l: &mut WindowLoop) -> Result<(), SetupMenuError> {
+        let Some(menu) = &l.menu else {
+            return Ok(());
+        };
+
+        let icon = match &self.icon {
+            Some(icon) => Some(
+                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+                    .map_err(SetupMenuError::BuildIcon)?,
+            ),
+            None => None,
+        };
+
+        let error_icon = match &self.error_icon {
+            Some(icon) => Some(
+                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+                    .map_err(SetupMenuError::BuildErrorIcon)?,
+            ),
+            None => None,
+        };
+
+        l.window.add_icon().map_err(SetupMenuError::AddIcon)?;
+
+        if let Some(icon) = &icon {
+            l.window
+                .set_icon(icon.clone())
+                .map_err(SetupMenuError::SetIcon)?;
+        }
+
         for (index, item) in self.menu.iter().enumerate() {
             debug_assert!(u32::try_from(index).is_ok());
 
             match &item.kind {
                 MenuItemKind::Separator => {
-                    window
-                        .add_menu_separator(index as u32)
+                    menu.add_menu_separator(index as u32)
                         .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
                 }
                 MenuItemKind::MenyEntry { text, default } => {
-                    window
-                        .add_menu_entry(index as u32, text.as_str(), *default)
+                    menu.add_menu_entry(index as u32, text.as_str(), *default)
                         .map_err(|e| SetupMenuError::AddMenuEntry(index, e))?;
                 }
             }
         }
 
+        l.icons = window_loop::Icons { icon, error_icon };
         Ok(())
     }
 }

@@ -2,7 +2,6 @@
 
 use std::ffi::OsStr;
 use std::io;
-use std::path::Path;
 use std::ptr;
 
 use windows_sys::Win32::UI::Shell::ShellExecuteW;
