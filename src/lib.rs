@@ -4,6 +4,8 @@
 //!
 //! A minimal window context for Rust.
 //!
+//! ![The showcase popup menu](https://github.com/udoprog/winctx/blob/main/graphics/showcase.png?raw=true)
+//!
 //! In order to do most productive things in a Windows desktop environment, you
 //! need to construct and interact with a window. Constructing this window
 //! allows for processing messages which fill a wide range of functions.
@@ -145,8 +147,12 @@ pub use self::area_id::AreaId;
 mod area_id;
 
 #[doc(inline)]
-pub use self::event_loop::{ClipboardEvent, Event, EventLoop};
+pub use self::event_loop::EventLoop;
 mod event_loop;
+
+#[doc(inline)]
+pub use self::event::Event;
+pub mod event;
 
 #[doc(inline)]
 pub use self::window_builder::WindowBuilder;

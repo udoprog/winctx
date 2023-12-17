@@ -63,10 +63,10 @@ async fn main() -> winctx::Result<()> {
         };
 
         match event {
-            Event::IconClicked(area_id) => {
-                println!("Icon clicked: {area_id:?}");
+            Event::IconClicked { area_id, event, .. } => {
+                println!("Icon clicked: {area_id:?}: {event:?}");
             }
-            Event::MenuItemClicked(item_id) => {
+            Event::MenuItemClicked { item_id, .. } => {
                 println!("Menu entry clicked: {item_id:?}");
 
                 match item_id {
@@ -116,14 +116,14 @@ async fn main() -> winctx::Result<()> {
                     sender.shutdown();
                 }
             }
-            Event::NotificationClicked(area_id, token) => {
-                println!("Balloon clicked: {area_id:?}: {token:?}");
+            Event::NotificationClicked { area_id, id, .. } => {
+                println!("Balloon clicked: {area_id:?}: {id:?}");
             }
-            Event::NotificationDismissed(area_id, token) => {
-                println!("Notification dismissed: {area_id:?}: {token:?}");
+            Event::NotificationDismissed { area_id, id, .. } => {
+                println!("Notification dismissed: {area_id:?}: {id:?}");
             }
-            Event::CopyData(ty, bytes) => {
-                println!("Data of type {ty} copied to process: {:?}", bytes);
+            Event::CopyData { ty, data, .. } => {
+                println!("Data of type {ty} copied to process: {:?}", data);
             }
             Event::Shutdown => {
                 println!("Window shut down");

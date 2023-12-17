@@ -1,5 +1,6 @@
 use std::fmt;
 
+use crate::event::{MouseButton, MouseButtons};
 use crate::menu_item::MenuItemKind;
 use crate::{AreaId, ItemId, MenuItem};
 
@@ -9,6 +10,8 @@ pub struct PopupMenu {
     pub(super) menu: Vec<MenuItem>,
     /// The default item in the menu.
     pub(super) default: Option<u32>,
+    /// Mouse buttons which will be accepted to open the menu.
+    pub(super) open_menu: MouseButtons,
 }
 
 impl PopupMenu {
@@ -18,6 +21,36 @@ impl PopupMenu {
             area_id,
             menu: Vec::new(),
             default: None,
+            open_menu: MouseButtons::RIGHT,
+        }
+    }
+
+    /// Specify a collection of mouse buttons which will be accepted to open the
+    /// context menu.
+    ///
+    /// By default this is [`MouseButton::Right`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::WindowBuilder;
+    /// use winctx::event::MouseButton;
+    ///
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area();
+    ///
+    /// let menu = area.popup_menu().open_menu([MouseButton::Left, MouseButton::Right]);
+    /// menu.push_entry("Example Application");
+    /// menu.push_separator();
+    /// menu.push_entry("Exit...");
+    /// ```
+    pub fn open_menu<I>(self, buttons: I) -> Self
+    where
+        I: IntoIterator<Item = MouseButton>,
+    {
+        Self {
+            open_menu: MouseButtons::from_iter(buttons),
+            ..self
         }
     }
 
@@ -33,7 +66,7 @@ impl PopupMenu {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// use winctx::WindowBuilder;
     ///
     /// let mut window = WindowBuilder::new("se.tedro.Example");;

@@ -8,9 +8,7 @@ use crate::item_id::ItemId;
 use crate::window_loop::IconHandle;
 use crate::window_loop::{WindowEvent, WindowLoop};
 use crate::NotificationId;
-use crate::{AreaId, InputEvent, Notification, Result};
-
-use super::Event;
+use crate::{AreaId, Event, InputEvent, Notification, Result};
 
 /// The event loop being run.
 #[repr(C)]
@@ -92,30 +90,37 @@ impl EventLoop {
                 }
                 e = self.window_loop.tick() => {
                     match e {
-                        WindowEvent::MenuItemClicked(area_id, idx) => {
-                            return Ok(Event::MenuItemClicked(ItemId::new(area_id.id(), idx)));
+                        WindowEvent::MenuItemClicked(area_id, idx, event) => {
+                            return Ok(Event::MenuItemClicked {
+                                item_id: ItemId::new(area_id.id(), idx),
+                                event,
+                            });
                         },
-                        WindowEvent::Clipboard(clipboard_event) => {
-                            return Ok(Event::Clipboard(clipboard_event));
+                        WindowEvent::Clipboard(event) => {
+                            return Ok(Event::Clipboard { event });
                         }
-                        WindowEvent::IconClicked(area_id) => {
-                            return Ok(Event::IconClicked(area_id));
+                        WindowEvent::IconClicked(area_id, event) => {
+                            return Ok(Event::IconClicked { area_id, event });
                         }
-                        WindowEvent::NotificationClicked(actual_menu_id) => {
-                            let (area_id, current) = self.take_notification()?;
+                        WindowEvent::NotificationClicked(actual_menu_id, event) => {
+                            let (area_id, id) = self.take_notification()?;
                             debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationClicked(area_id, current));
+                            return Ok(Event::NotificationClicked {
+                                area_id,
+                                id,
+                                event,
+                            });
                         }
                         WindowEvent::NotificationDismissed(actual_menu_id) => {
-                            let (area_id, current) = self.take_notification()?;
+                            let (area_id, id) = self.take_notification()?;
                             debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationDismissed(area_id, current));
+                            return Ok(Event::NotificationDismissed { area_id, id });
                         }
-                        WindowEvent::CopyData(ty, bytes) => {
-                            return Ok(Event::CopyData(ty, bytes));
+                        WindowEvent::CopyData(ty, data) => {
+                            return Ok(Event::CopyData { ty, data });
                         }
                         WindowEvent::Error(error) => {
-                            return Ok(Event::Error(error));
+                            return Ok(Event::Error { error });
                         }
                         WindowEvent::Shutdown => {
                             self.window_loop.join()?;

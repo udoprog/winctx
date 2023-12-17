@@ -6,16 +6,18 @@ use windows_sys::Win32::Foundation::{FALSE, TRUE};
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 
 use crate::convert::ToWide;
+use crate::event::MouseButtons;
 use crate::ModifyMenuItem;
 
 #[repr(C)]
 pub(crate) struct PopupMenuHandle {
     pub(crate) hmenu: winuser::HMENU,
+    pub(crate) open_menu: MouseButtons,
 }
 
 impl PopupMenuHandle {
     /// Construct a new menu handle.
-    pub(crate) fn new() -> io::Result<Self> {
+    pub(crate) fn new(open_menu: MouseButtons) -> io::Result<Self> {
         unsafe {
             // Setup menu
             let hmenu = winuser::CreatePopupMenu();
@@ -24,7 +26,7 @@ impl PopupMenuHandle {
                 return Err(io::Error::last_os_error());
             }
 
-            let menu = Self { hmenu };
+            let menu = Self { hmenu, open_menu };
 
             let m = winuser::MENUINFO {
                 cbSize: size_of::<winuser::MENUINFO>() as u32,
