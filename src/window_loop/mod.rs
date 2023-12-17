@@ -3,8 +3,8 @@ mod messages;
 pub(super) use self::window_loop::{WindowEvent, WindowLoop};
 mod window_loop;
 
-pub(crate) use self::icon::Icon;
-mod icon;
+pub(crate) use self::icon_handle::IconHandle;
+mod icon_handle;
 
 use self::clipboard_manager::ClipboardManager;
 mod clipboard_manager;
@@ -20,9 +20,3 @@ mod window_class_handle;
 
 use self::menu_handle::MenuHandle;
 mod menu_handle;
-
-#[derive(Default)]
-pub(crate) struct Icons {
-    pub(crate) icon: Option<Icon>,
-    pub(crate) error_icon: Option<Icon>,
-}

@@ -42,20 +42,20 @@ The basic loop looks like this:
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, Notification, ContextBuilder, MenuItem};
+use winctx::{Event, Notification, WindowBuilder, MenuItem};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder = ContextBuilder::new("Example Application");
+    let mut builder = WindowBuilder::new("Example Application");
     builder.set_icon(ICON, 22, 22);
 
-    builder.push_menu_item(MenuItem::entry("Hello World", true));
-    let notification = builder.push_menu_item(MenuItem::entry("Show notification", false));
-    let notification_multiple = builder.push_menu_item(MenuItem::entry("Show multiple notifications", false));
-    builder.push_menu_item(MenuItem::separator());
-    let quit = builder.push_menu_item(MenuItem::entry("Quit", false));
+    builder.push(MenuItem::entry("Hello World", true));
+    let notification = builder.push(MenuItem::entry("Show notification", false));
+    let notification_multiple = builder.push(MenuItem::entry("Show multiple notifications", false));
+    builder.push(MenuItem::separator());
+    let quit = builder.push(MenuItem::entry("Quit", false));
 
     let (sender, mut event_loop) = builder.build().await?;
 

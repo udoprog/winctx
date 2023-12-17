@@ -36,6 +36,7 @@ impl fmt::Display for Error {
             ErrorKind::SetRegistryKey(..) => write!(f, "Failed to set registry key"),
             ErrorKind::CurrentExecutable(..) => write!(f, "Could not get current executable"),
             ErrorKind::SetupMenu(..) => write!(f, "Failed to setup menu"),
+            ErrorKind::ClearTooltip(..) => write!(f, "Failed to clear tooltip message"),
             ErrorKind::SetTooltip(..) => write!(f, "Failed to set tooltip message"),
             ErrorKind::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
@@ -61,6 +62,7 @@ impl std::error::Error for Error {
             ErrorKind::SetRegistryKey(error) => Some(error),
             ErrorKind::CurrentExecutable(error) => Some(error),
             ErrorKind::SetupMenu(error) => Some(error),
+            ErrorKind::ClearTooltip(error) => Some(error),
             ErrorKind::SetTooltip(error) => Some(error),
             ErrorKind::SetIcon(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
@@ -130,6 +132,7 @@ pub(super) enum ErrorKind {
     SetRegistryKey(io::Error),
     CurrentExecutable(io::Error),
     SetupMenu(SetupMenuError),
+    ClearTooltip(io::Error),
     SetTooltip(io::Error),
     SetIcon(io::Error),
     SendNotification(io::Error),
@@ -149,7 +152,6 @@ pub(super) enum SetupMenuError {
     AddIcon(io::Error),
     SetIcon(io::Error),
     BuildIcon(io::Error),
-    BuildErrorIcon(io::Error),
 }
 
 impl fmt::Display for SetupMenuError {
@@ -164,7 +166,6 @@ impl fmt::Display for SetupMenuError {
             Self::AddIcon(..) => write!(f, "Failed to add icon"),
             Self::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
             Self::BuildIcon(..) => write!(f, "Failed to construct icon"),
-            Self::BuildErrorIcon(..) => write!(f, "Failed to construct error icon"),
         }
     }
 }
@@ -177,7 +178,6 @@ impl std::error::Error for SetupMenuError {
             Self::AddIcon(error) => Some(error),
             Self::SetIcon(error) => Some(error),
             Self::BuildIcon(error) => Some(error),
-            Self::BuildErrorIcon(error) => Some(error),
         }
     }
 }

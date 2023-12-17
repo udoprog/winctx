@@ -22,11 +22,10 @@ impl MenuItem {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{ContextBuilder, MenuItem};
+    /// use winctx::{NotificationMenu, MenuItem};
     ///
-    /// let mut builder = ContextBuilder::new("Example Application")
-    ///     .class_name("se.tedro.Example");
-    /// builder.push_menu_item(MenuItem::separator());
+    /// let mut menu = NotificationMenu::new();
+    /// menu.push(MenuItem::separator());
     /// ```
     pub fn separator() -> Self {
         Self {
@@ -47,12 +46,11 @@ impl MenuItem {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{ContextBuilder, MenuItem};
+    /// use winctx::{NotificationMenu, MenuItem};
     ///
-    /// let mut builder = ContextBuilder::new("Example Application")
-    ///     .class_name("se.tedro.Example");
-    /// builder.push_menu_item(MenuItem::entry("Example Application", true));
-    /// builder.push_menu_item(MenuItem::entry("Exit...", false));
+    /// let mut menu = NotificationMenu::new();
+    /// menu.push(MenuItem::entry("Example Application", true));
+    /// menu.push(MenuItem::entry("Exit...", false));
     /// ```
     pub fn entry<T>(text: T, default: bool) -> Self
     where

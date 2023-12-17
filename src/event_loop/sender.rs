@@ -5,13 +5,14 @@ use tokio::sync::mpsc;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use crate::{Notification, Token};
+use crate::{Icon, Notification, Token};
 
 #[derive(Debug)]
 pub(crate) enum InputEvent {
     Shutdown,
-    Cleared,
-    Errored(String),
+    ClearTooltip,
+    SetTooltip(String),
+    SetIcon(Icon),
     Notification(u32, Notification),
 }
 
@@ -36,21 +37,25 @@ impl Sender {
         }
     }
 
-    /// Reset the current state to defaults.
-    ///
-    /// This will clear any error state previously set.
-    pub fn clear(&self) {
-        _ = self.inner.tx.send(InputEvent::Cleared);
+    /// Set the icon of the context menu.
+    pub fn set_icon(&self, icon: Icon) {
+        _ = self.inner.tx.send(InputEvent::SetIcon(icon));
     }
 
-    /// Set an error with the given message.
-    ///
-    /// The message will be used as the tooltip when the icon is hovered.
-    pub fn error<E>(&self, error: E)
+    /// Clear the tooltip of the context menu.
+    pub fn clear_tooltip(&self) {
+        _ = self.inner.tx.send(InputEvent::ClearTooltip);
+    }
+
+    /// Set the tooltip of the context menu.
+    pub fn set_tooltip<E>(&self, message: E)
     where
         E: fmt::Display,
     {
-        _ = self.inner.tx.send(InputEvent::Errored(error.to_string()));
+        _ = self
+            .inner
+            .tx
+            .send(InputEvent::SetTooltip(message.to_string()));
     }
 
     /// Send the given notification.

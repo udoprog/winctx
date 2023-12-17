@@ -5,38 +5,34 @@ use tokio::sync::mpsc;
 
 use crate::error::ErrorKind::*;
 use crate::error::SetupMenuError;
-use crate::menu_item::{MenuItem, MenuItemKind};
+use crate::menu_item::MenuItemKind;
 use crate::window_loop;
 use crate::window_loop::WindowLoop;
+use crate::NotificationIcons;
+use crate::NotificationMenu;
 use crate::Result;
-use crate::{EventLoop, Sender, Token};
-
-pub(super) struct Icon {
-    pub(super) buffer: Box<[u8]>,
-    pub(super) width: u32,
-    pub(super) height: u32,
-}
+use crate::{EventLoop, Icon, Sender};
 
 /// The builder of a window context.
-pub struct ContextBuilder {
+pub struct WindowBuilder {
     class_name: OsString,
     window_name: Option<OsString>,
-    menu: Vec<MenuItem>,
-    icon: Option<Icon>,
-    error_icon: Option<Icon>,
+    notification_menu: Option<NotificationMenu>,
+    notification_icons: Option<NotificationIcons>,
     clipboard_events: bool,
+    initial_icon: Option<Icon>,
 }
 
-impl ContextBuilder {
+impl WindowBuilder {
     /// Construct a new event loop where the window has the specified class
     /// name.
     ///
     /// # Examples
     ///
     /// ```
-    /// use winctx::ContextBuilder;
+    /// use winctx::WindowBuilder;
     ///
-    /// let mut builder = ContextBuilder::new("Example Application");
+    /// let mut builder = WindowBuilder::new("Example Application");
     /// ```
     pub fn new<N>(class_name: N) -> Self
     where
@@ -45,10 +41,10 @@ impl ContextBuilder {
         Self {
             class_name: class_name.as_ref().to_owned(),
             window_name: None,
-            menu: Vec::new(),
-            icon: None,
-            error_icon: None,
+            notification_menu: None,
+            notification_icons: None,
             clipboard_events: false,
+            initial_icon: None,
         }
     }
 
@@ -57,9 +53,9 @@ impl ContextBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::ContextBuilder;
+    /// use winctx::WindowBuilder;
     ///
-    /// let mut builder = ContextBuilder::new("Example Application")
+    /// let mut builder = WindowBuilder::new("Example Application")
     ///     .clipboard_events(true);
     /// ```
     pub fn clipboard_events(self, clipboard_events: bool) -> Self {
@@ -74,9 +70,9 @@ impl ContextBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::ContextBuilder;
+    /// use winctx::WindowBuilder;
     ///
-    /// let mut builder = ContextBuilder::new("se.tedro.Example")
+    /// let mut builder = WindowBuilder::new("se.tedro.Example")
     ///     .window_name("Example Application");
     /// ```
     pub fn window_name<N>(self, window_name: N) -> Self
@@ -89,31 +85,28 @@ impl ContextBuilder {
         }
     }
 
-    /// Add a new menu item.
-    pub fn push_menu_item(&mut self, menu_item: MenuItem) -> Token {
-        let token = Token::new(self.menu.len() as u32);
-        self.menu.push(menu_item);
-        token
+    /// Set the notification menu to use in the tray of the constructed window.
+    pub fn notification_menu(self, notification_menu: NotificationMenu) -> Self {
+        Self {
+            notification_menu: Some(notification_menu),
+            ..self
+        }
     }
 
-    /// Set the default icon to use for the context menu.
-    pub fn set_icon(&mut self, icon: &[u8], width: u32, height: u32) {
-        self.icon = Some(Icon {
-            buffer: icon.into(),
-            width,
-            height,
-        });
+    /// Set the notification icons to use in the tray of the constructed window.
+    pub fn notification_icons(self, notification_icons: NotificationIcons) -> Self {
+        Self {
+            notification_icons: Some(notification_icons),
+            ..self
+        }
     }
 
-    /// Set the icon to use when an error has been emitted.
-    ///
-    /// This is the icon that will be set when [`Sender::error`] is used.
-    pub fn set_error_icon(&mut self, icon: &[u8], width: u32, height: u32) {
-        self.error_icon = Some(Icon {
-            buffer: icon.into(),
-            width,
-            height,
-        });
+    /// Set the default icon to use.
+    pub fn initial_icon(self, icon: Icon) -> Self {
+        Self {
+            initial_icon: Some(icon),
+            ..self
+        }
     }
 
     /// Construct a new event loop and system integration.
@@ -124,7 +117,7 @@ impl ContextBuilder {
             &self.class_name,
             self.window_name.as_deref(),
             self.clipboard_events,
-            !self.menu.is_empty(),
+            self.notification_menu.is_some(),
         )
         .await
         .map_err(WindowSetup)?;
@@ -137,35 +130,36 @@ impl ContextBuilder {
     }
 
     fn setup_menu(&self, l: &mut WindowLoop) -> Result<(), SetupMenuError> {
-        let Some(menu) = &l.menu else {
+        let (Some(menu), Some(notification_menu)) = (&l.menu, &self.notification_menu) else {
             return Ok(());
         };
 
-        let icon = match &self.icon {
-            Some(icon) => Some(
-                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
+        if let Some(notification_icons) = &self.notification_icons {
+            let mut icons = Vec::with_capacity(notification_icons.icons.len());
+
+            for icon in notification_icons.icons.iter() {
+                icons.push(
+                    window_loop::IconHandle::from_buffer(
+                        icon.as_bytes(),
+                        icon.width(),
+                        icon.height(),
+                    )
                     .map_err(SetupMenuError::BuildIcon)?,
-            ),
-            None => None,
-        };
+                );
+            }
 
-        let error_icon = match &self.error_icon {
-            Some(icon) => Some(
-                window_loop::Icon::from_buffer(&icon.buffer, icon.width, icon.height)
-                    .map_err(SetupMenuError::BuildErrorIcon)?,
-            ),
-            None => None,
-        };
+            l.window.add_icon().map_err(SetupMenuError::AddIcon)?;
 
-        l.window.add_icon().map_err(SetupMenuError::AddIcon)?;
+            if let Some(icon) = self.initial_icon {
+                l.window
+                    .set_icon(&icons[icon.as_usize()])
+                    .map_err(SetupMenuError::SetIcon)?;
+            }
 
-        if let Some(icon) = &icon {
-            l.window
-                .set_icon(icon.clone())
-                .map_err(SetupMenuError::SetIcon)?;
+            l.icons = icons;
         }
 
-        for (index, item) in self.menu.iter().enumerate() {
+        for (index, item) in notification_menu.menu.iter().enumerate() {
             debug_assert!(u32::try_from(index).is_ok());
 
             match &item.kind {
@@ -180,7 +174,6 @@ impl ContextBuilder {
             }
         }
 
-        l.icons = window_loop::Icons { icon, error_icon };
         Ok(())
     }
 }

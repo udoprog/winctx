@@ -1,23 +1,33 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{ContextBuilder, Event, MenuItem, Notification};
+use winctx::{Event, MenuItem, Notification, NotificationIcons, NotificationMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder = ContextBuilder::new("se.tedro.Example").window_name("Example Application");
-    builder.set_icon(ICON, 22, 22);
+    let mut icons = NotificationIcons::new();
+    let initial_icon = icons.push_buffer(ICON, 22, 22);
 
-    builder.push_menu_item(MenuItem::entry("Hello World", true));
-    let notification = builder.push_menu_item(MenuItem::entry("Show notification", false));
-    let notification_multiple =
-        builder.push_menu_item(MenuItem::entry("Show multiple notifications", false));
-    builder.push_menu_item(MenuItem::separator());
-    let quit = builder.push_menu_item(MenuItem::entry("Quit", false));
+    let mut menu = NotificationMenu::new();
+    menu.push(MenuItem::entry("Hello World", true));
+    let single = menu.push(MenuItem::entry("Show notification", false));
+    let multiple = menu.push(MenuItem::entry("Show multiple notifications", false));
+    let tooltip = menu.push(MenuItem::entry("Toggle tooltip", false));
+    menu.push(MenuItem::separator());
+    let quit = menu.push(MenuItem::entry("Quit", false));
 
-    let (sender, mut event_loop) = builder.build().await?;
+    let (sender, mut event_loop) = WindowBuilder::new("se.tedro.Example")
+        .window_name("Example Application")
+        .notification_icons(icons)
+        .notification_menu(menu)
+        .initial_icon(initial_icon)
+        .build()
+        .await?;
+
+    sender.set_tooltip("Hello!");
+    let mut has_tooltip = true;
 
     let mut ctrl_c = pin!(ctrl_c());
     let mut shutdown = false;
@@ -38,7 +48,7 @@ async fn main() -> winctx::Result<()> {
             Event::MenuItemClicked(token) => {
                 println!("Menu entry clicked: {:?}", token);
 
-                if token == notification {
+                if token == single {
                     sender.notification(
                         Notification::new("And this is a body")
                             .title("This is a title")
@@ -47,7 +57,7 @@ async fn main() -> winctx::Result<()> {
                     continue;
                 }
 
-                if token == notification_multiple {
+                if token == multiple {
                     sender.notification(Notification::new("First"));
                     sender.notification(Notification::new("Second"));
                     continue;
@@ -55,6 +65,16 @@ async fn main() -> winctx::Result<()> {
 
                 if token == quit {
                     sender.shutdown();
+                }
+
+                if token == tooltip {
+                    if has_tooltip {
+                        sender.clear_tooltip();
+                    } else {
+                        sender.set_tooltip("This is a tooltip!");
+                    }
+
+                    has_tooltip = !has_tooltip;
                 }
             }
             Event::NotificationClicked(token) => {

@@ -24,7 +24,9 @@ use crate::event_loop::ClipboardEvent;
 use crate::window_loop::messages;
 use crate::Result;
 
-use super::{ClipboardManager, Icons, MenuHandle, MenuManager, WindowClassHandle, WindowHandle};
+use super::{
+    ClipboardManager, IconHandle, MenuHandle, MenuManager, WindowClassHandle, WindowHandle,
+};
 
 #[derive(Debug)]
 pub(crate) enum WindowEvent {
@@ -176,7 +178,7 @@ unsafe fn init_window(
 /// Note: repr(C) is important here to ensure drop order.
 #[repr(C)]
 pub(crate) struct WindowLoop {
-    pub(crate) icons: Icons,
+    pub(crate) icons: Vec<IconHandle>,
     pub(crate) menu: Option<MenuHandle>,
     pub(crate) window: WindowHandle,
     window_class: WindowClassHandle,
@@ -285,7 +287,7 @@ impl WindowLoop {
         };
 
         Ok(WindowLoop {
-            icons: Icons::default(),
+            icons: Vec::new(),
             menu,
             window,
             window_class,

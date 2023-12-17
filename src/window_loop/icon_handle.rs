@@ -5,11 +5,11 @@ use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 use windows_sys::Win32::UI::WindowsAndMessaging::{DestroyIcon, HICON};
 
 #[derive(Clone)]
-pub(crate) struct Icon {
+pub(crate) struct IconHandle {
     pub(super) hicon: HICON,
 }
 
-impl Icon {
+impl IconHandle {
     pub(crate) fn from_buffer(buffer: &[u8], width: u32, height: u32) -> io::Result<Self> {
         let offset = unsafe {
             winuser::LookupIconIdFromDirectoryEx(
@@ -47,7 +47,7 @@ impl Icon {
     }
 }
 
-impl Drop for Icon {
+impl Drop for IconHandle {
     fn drop(&mut self) {
         // SAFETY: icon handle is owned by this struct.
         unsafe {

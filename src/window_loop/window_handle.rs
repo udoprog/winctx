@@ -4,11 +4,11 @@ use std::mem::{size_of, MaybeUninit};
 use windows_sys::Win32::Foundation::{FALSE, HWND};
 use windows_sys::Win32::UI::Shell as shellapi;
 
-use crate::convert::copy_wstring;
+use crate::convert::copy_wstring_lossy;
 use crate::notification::NotificationIcon;
 use crate::Notification;
 
-use super::{messages, Icon};
+use super::{messages, IconHandle};
 
 pub(crate) struct WindowHandle {
     pub(super) hwnd: HWND,
@@ -51,10 +51,26 @@ impl WindowHandle {
         Ok(())
     }
 
+    /// Clear out tooltip.
+    pub(crate) fn clear_tooltip(&self) -> io::Result<()> {
+        let mut nid = self.new_nid();
+        nid.uFlags = shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
+        copy_wstring_lossy(&mut nid.szTip, "");
+
+        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
+
+        if result == FALSE {
+            return Err(io::Error::last_os_error());
+        }
+
+        Ok(())
+    }
+
     /// Set tooltip.
     pub(crate) fn set_tooltip(&self, tooltip: &str) -> io::Result<()> {
         let mut nid = self.new_nid();
-        copy_wstring(&mut nid.szTip, tooltip);
+        nid.uFlags = shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
+        copy_wstring_lossy(&mut nid.szTip, tooltip);
 
         let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
 
@@ -66,7 +82,7 @@ impl WindowHandle {
     }
 
     /// Set context icon.
-    pub(crate) fn set_icon(&mut self, icon: Icon) -> io::Result<()> {
+    pub(crate) fn set_icon(&mut self, icon: &IconHandle) -> io::Result<()> {
         let result = unsafe {
             let mut nid = self.new_nid();
             nid.uFlags = shellapi::NIF_ICON;
@@ -98,10 +114,10 @@ impl WindowHandle {
         nid.uFlags = shellapi::NIF_INFO;
 
         if let Some(title) = n.title {
-            copy_wstring(&mut nid.szInfoTitle, title.as_str());
+            copy_wstring_lossy(&mut nid.szInfoTitle, title.as_str());
         }
 
-        copy_wstring(&mut nid.szInfo, n.message.as_str());
+        copy_wstring_lossy(&mut nid.szInfo, n.message.as_str());
 
         if let Some(timeout) = n.timeout {
             nid.Anonymous.uTimeout = timeout.as_millis() as u32;

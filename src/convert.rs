@@ -5,11 +5,20 @@ use std::ffi::{OsStr, OsString};
 use crate::windows::{OsStrExt, OsStringExt};
 use crate::Result;
 
-/// Copy a wide string from a source to a destination.
-pub(crate) fn copy_wstring(dest: &mut [u16], source: &str) {
-    let source = source.to_wide_null();
-    let len = usize::min(source.len(), dest.len());
-    dest[..len].copy_from_slice(&source[..len]);
+/// Copy a wide string from a source to a destination, truncating if necessary.
+pub(crate) fn copy_wstring_lossy(dest: &mut [u16], source: &str) {
+    let mut n = 0;
+
+    for c in source.encode_utf16().take(dest.len()) {
+        dest[n] = c;
+        n += 1;
+    }
+
+    if dest.len() > n {
+        dest[n] = 0;
+    } else {
+        dest[n - 1] = 0;
+    }
 }
 
 pub(crate) trait ToWide {

@@ -53,21 +53,20 @@ impl EventLoop {
             tokio::select! {
                 Some(event) = self.events_rx.recv() => {
                     match event {
-                        InputEvent::Cleared => {
+                        InputEvent::ClearTooltip => {
                             if self.window_loop.menu.is_some() {
-                                self.window_loop.window.set_tooltip("").map_err(SetTooltip)?;
-
-                                if let Some(icon) = &self.window_loop.icons.icon {
-                                    self.window_loop.window.set_icon(icon.clone()).map_err(SetIcon)?;
-                                }
+                                self.window_loop.window.clear_tooltip().map_err(ClearTooltip)?;
                             }
                         }
-                        InputEvent::Errored(message) => {
+                        InputEvent::SetTooltip(message) => {
                             if self.window_loop.menu.is_some() {
                                 self.window_loop.window.set_tooltip(&message).map_err(SetTooltip)?;
-
-                                if let Some(icon) = &self.window_loop.icons.error_icon {
-                                    self.window_loop.window.set_icon(icon.clone()).map_err(SetIcon)?;
+                            }
+                        }
+                        InputEvent::SetIcon(icon) => {
+                            if self.window_loop.menu.is_some() {
+                                if let Some(icon) = self.window_loop.icons.get(icon.as_usize()) {
+                                    self.window_loop.window.set_icon(icon).map_err(SetIcon)?;
                                 }
                             }
                         }

@@ -39,76 +39,85 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, Notification, ContextBuilder, MenuItem};
+//! use winctx::{Event, MenuItem, Notification, NotificationIcons, NotificationMenu, WindowBuilder};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
 //!
-//! #[tokio::main]
-//! async fn main() -> winctx::Result<()> {
-//!     let mut builder = ContextBuilder::new("Example Application");
-//!     builder.set_icon(ICON, 22, 22);
+//! # #[tokio::main] async fn main() -> winctx::Result<()> {
+//! let mut icons = NotificationIcons::new();
+//! let initial_icon = icons.push_buffer(ICON, 22, 22);
 //!
-//!     builder.push_menu_item(MenuItem::entry("Hello World", true));
-//!     let notification = builder.push_menu_item(MenuItem::entry("Show notification", false));
-//!     let notification_multiple = builder.push_menu_item(MenuItem::entry("Show multiple notifications", false));
-//!     builder.push_menu_item(MenuItem::separator());
-//!     let quit = builder.push_menu_item(MenuItem::entry("Quit", false));
+//! let mut menu = NotificationMenu::new();
+//! menu.push(MenuItem::entry("Hello World", true));
+//! let single = menu.push(MenuItem::entry("Show notification", false));
+//! let multiple = menu.push(MenuItem::entry("Show multiple notifications", false));
+//! menu.push(MenuItem::separator());
+//! let quit = menu.push(MenuItem::entry("Quit", false));
 //!
-//!     let (sender, mut event_loop) = builder.build().await?;
+//! let (sender, mut event_loop) = WindowBuilder::new("se.tedro.Example")
+//!     .window_name("Example Application")
+//!     .notification_icons(icons)
+//!     .notification_menu(menu)
+//!     .initial_icon(initial_icon)
+//!     .build()
+//!     .await?;
 //!
-//!     let mut ctrl_c = pin!(ctrl_c());
-//!     let mut shutdown = false;
+//! let mut ctrl_c = pin!(ctrl_c());
+//! let mut shutdown = false;
 //!
-//!     loop {
-//!         let event = tokio::select! {
-//!             _ = ctrl_c.as_mut(), if !shutdown => {
-//!                 sender.shutdown();
-//!                 shutdown = true;
+//! loop {
+//!     let event = tokio::select! {
+//!         _ = ctrl_c.as_mut(), if !shutdown => {
+//!             sender.shutdown();
+//!             shutdown = true;
+//!             continue;
+//!         }
+//!         event = event_loop.tick() => {
+//!             event?
+//!         }
+//!     };
+//!
+//!     match event {
+//!         Event::MenuItemClicked(token) => {
+//!             println!("Menu entry clicked: {:?}", token);
+//!
+//!             if token == single {
+//!                 sender.notification(
+//!                     Notification::new("And this is a body")
+//!                         .title("This is a title")
+//!                         .large_icon(),
+//!                 );
 //!                 continue;
 //!             }
-//!             event = event_loop.tick() => {
-//!                 event?
-//!             }
-//!         };
 //!
-//!         match event {
-//!             Event::MenuItemClicked(token) => {
-//!                 println!("Menu entry clicked: {:?}", token);
+//!             if token == multiple {
+//!                 sender.notification(Notification::new("First"));
+//!                 sender.notification(Notification::new("Second"));
+//!                 continue;
+//!             }
 //!
-//!                 if token == notification {
-//!                     sender.notification(
-//!                         Notification::new("And this is a body").title("This is a title"),
-//!                     );
-//!                     continue;
-//!                 }
-//!
-//!                 if token == notification_multiple {
-//!                     sender.notification(Notification::new("First"));
-//!                     sender.notification(Notification::new("Second"));
-//!                     continue;
-//!                 }
-//!
-//!                 if token == quit {
-//!                     sender.shutdown();
-//!                 }
+//!             if token == quit {
+//!                 sender.shutdown();
 //!             }
-//!             Event::NotificationClicked(token) => {
-//!                 println!("Balloon clicked: {:?}", token);
-//!             }
-//!             Event::NotificationDismissed(token) => {
-//!                 println!("Notification dismissed: {:?}", token);
-//!             }
-//!             Event::Shutdown => {
-//!                 println!("Window shut down");
-//!                 break;
-//!             }
-//!             _ => {}
 //!         }
+//!         Event::NotificationClicked(token) => {
+//!             println!("Balloon clicked: {:?}", token);
+//!         }
+//!         Event::NotificationDismissed(token) => {
+//!             println!("Notification dismissed: {:?}", token);
+//!         }
+//!         Event::CopyData(ty, bytes) => {
+//!             println!("Data of type {ty} copied to process: {:?}", bytes);
+//!         }
+//!         Event::Shutdown => {
+//!             println!("Window shut down");
+//!             break;
+//!         }
+//!         _ => {}
 //!     }
-//!
-//!     Ok(())
 //! }
+//! # Ok(()) }
 //! ```
 //!
 //! [Event]: https://docs.rs/winctx/latest/winctx/enum.Event.html
@@ -154,8 +163,17 @@ pub use self::event_loop::{ClipboardEvent, Event, EventLoop, Sender};
 mod event_loop;
 
 #[doc(inline)]
-pub use self::context_builder::ContextBuilder;
-mod context_builder;
+pub use self::window_builder::WindowBuilder;
+mod window_builder;
+
+pub use self::notification_icons::NotificationIcons;
+mod notification_icons;
+
+pub use self::notification_menu::NotificationMenu;
+mod notification_menu;
+
+pub use self::icon_buffer::IconBuffer;
+mod icon_buffer;
 
 #[doc(inline)]
 pub use self::autostart::AutoStart;
@@ -170,6 +188,9 @@ mod named_mutex;
 #[doc(inline)]
 pub use self::menu_item::MenuItem;
 pub(crate) mod menu_item;
+
+pub use self::icon::Icon;
+mod icon;
 
 #[cfg_attr(windows, path = "windows/real.rs")]
 #[cfg_attr(not(windows), path = "windows/fake.rs")]
