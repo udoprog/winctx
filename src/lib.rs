@@ -8,25 +8,34 @@
 //!
 //! ![The showcase popup menu](https://github.com/udoprog/winctx/blob/main/graphics/showcase.png?raw=true)
 //!
-//! In order to do most productive things in a Windows desktop environment, you
-//! need to construct and interact with a window. Constructing this window
-//! allows for processing messages which fill a wide range of functions.
+//! This crate provides a minimalistic method for setting up and running a
+//! [*window*][window]. A window on windows is more like a generic application
+//! framework and doesn't actually need to have any visible elements, but is
+//! necessary to do many of the productive things you might want to do on
+//! Windows.
 //!
-//! Doing this allows applications to:
-//! * [Register and use a context menu, the icons you see in the bottom right
-//!   for running applications][showcase].
-//! * [Send notifcations, or balloons as Windows call them][showcase].
-//! * [Monitor the clipboard for changes][clipboard].
+//! Some example of this are:
+//!
+//! * [Register and use a tray icon with a popup menu][showcase], or the
+//!   "clickable icons" you see in the bottom right for running applications.
+//! * [Send desktop notifcations][showcase], or "balloons" as they are sometimes
+//!   called.
+//! * Interact with the clipboard and [monitor it for changes][clipboard].
 //! * [Copy data to a remote process][copy-data], allowing for very simple
 //!   unidirection IPC.
 //!
-//! There are a few additional APIs provided by this crate because they are so
-//! common:
-//! * [Basic access the registry][registry] allowing the registration of an
-//!   application that should be [started automatically].
+//! There are a few additional APIs provided by this crate because they are also
+//! useful:
 //!
-//! Note that crate is fairly opinionated, not everything that is possible
-//! through the underlying APIs will be exposed.
+//! * [Basic safe registry access][registry] allowing for example of the
+//!   registration of an application that should be [started automatically] when
+//!   the user logs in.
+//!
+//! This crate is an amalgamation and cleanup of code I've copied back and forth
+//! between my projects, so it is fairly opinionated to things I personally find
+//! useful. Not everything will be possible, but if there is something you're
+//! missing and ~~hate being happy~~ enjoy Windows programming feel free to open
+//! an issue or a pull request.
 //!
 //! <br>
 //!
@@ -102,6 +111,7 @@
 //! # Ok(()) }
 //! ```
 //!
+//! [window]: https://learn.microsoft.com/en-us/windows/win32/learnwin32/creating-a-window
 //! [Event]: https://docs.rs/winctx/latest/winctx/enum.Event.html
 //! [clipboard]: https://github.com/udoprog/winctx/blob/main/examples/clipboard.rs
 //! [copy-data]: https://github.com/udoprog/winctx/blob/main/examples/copy_data.rs
