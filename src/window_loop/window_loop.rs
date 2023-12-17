@@ -145,7 +145,7 @@ unsafe fn init_window(
 /// Note: repr(C) is important here to ensure drop order.
 #[repr(C)]
 pub(crate) struct WindowLoop {
-    pub(crate) menu: Option<MenuHandle>,
+    pub(crate) menus: Vec<MenuHandle>,
     pub(crate) window: WindowHandle,
     window_class: WindowClassHandle,
     events_rx: mpsc::UnboundedReceiver<WindowEvent>,
@@ -158,7 +158,7 @@ impl WindowLoop {
         class_name: &OsStr,
         window_name: Option<&OsStr>,
         clipboard_events: bool,
-        hmenu: Option<winuser::HMENU>,
+        menus: Vec<MenuHandle>,
     ) -> Result<WindowLoop, WindowError> {
         let class_name = class_name.to_wide_null();
         let window_name = window_name.map(|n| n.to_wide_null());
@@ -169,6 +169,12 @@ impl WindowLoop {
 
         let (return_tx, return_rx) = oneshot::channel();
         let (events_tx, events_rx) = mpsc::unbounded_channel();
+
+        let mut hmenus = Vec::with_capacity(menus.len());
+
+        for menu in &menus {
+            hmenus.push(menu.hmenu);
+        }
 
         let thread = thread::spawn(move || unsafe {
             // NB: Don't move this, it's important that the window is
@@ -188,7 +194,8 @@ impl WindowLoop {
                 None
             };
 
-            let mut menu_manager = hmenu.map(|hmenu| MenuManager::new(&events_tx, hmenu));
+            let mut menu_manager =
+                (!hmenus.is_empty()).then(|| MenuManager::new(&events_tx, &hmenus));
 
             let hwnd = window.hwnd;
 
@@ -251,7 +258,7 @@ impl WindowLoop {
         };
 
         Ok(WindowLoop {
-            menu: None,
+            menus,
             window,
             window_class,
             events_rx,
@@ -289,5 +296,13 @@ impl WindowLoop {
         }
 
         Ok(())
+    }
+}
+
+impl Drop for WindowLoop {
+    fn drop(&mut self) {
+        for menu in &self.menus {
+            _ = self.window.delete_icon(menu.id);
+        }
     }
 }

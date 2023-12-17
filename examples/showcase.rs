@@ -18,12 +18,13 @@ async fn main() -> winctx::Result<()> {
     menu.push(MenuItem::separator());
     let quit = menu.push(MenuItem::entry("Quit", false));
 
-    let (sender, mut event_loop) = WindowBuilder::new("se.tedro.Example")
+    let mut window = WindowBuilder::new("se.tedro.Example")
         .window_name("Example Application")
-        .notification_menu(menu)
-        .icons(icons)
-        .build()
-        .await?;
+        .icons(icons);
+
+    let menu = window.push_notification_menu(menu);
+
+    let (sender, mut event_loop) = window.build().await?;
 
     sender.set_tooltip("Hello!");
     let mut has_tooltip = true;

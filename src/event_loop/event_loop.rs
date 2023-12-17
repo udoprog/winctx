@@ -42,10 +42,13 @@ impl EventLoop {
 
         if let Some((id, n)) = self.pending.pop_front() {
             self.visible = Some(id);
-            self.window_loop
-                .window
-                .send_notification(id, n)
-                .map_err(SendNotification)?;
+
+            if let Some(menu) = self.window_loop.menus.get(0) {
+                self.window_loop
+                    .window
+                    .send_notification(menu.id, id, n)
+                    .map_err(SendNotification)?;
+            }
         }
 
         Ok(id)
@@ -62,28 +65,30 @@ impl EventLoop {
                 Some(event) = self.events_rx.recv() => {
                     match event {
                         InputEvent::ClearTooltip => {
-                            if self.window_loop.menu.is_some() {
-                                self.window_loop.window.clear_tooltip().map_err(ClearTooltip)?;
+                            if let Some(menu) = self.window_loop.menus.get(0) {
+                                self.window_loop.window.clear_tooltip(menu.id).map_err(ClearTooltip)?;
                             }
                         }
                         InputEvent::SetTooltip(message) => {
-                            if self.window_loop.menu.is_some() {
-                                self.window_loop.window.set_tooltip(&message).map_err(SetTooltip)?;
+                            if let Some(menu) = self.window_loop.menus.get(0) {
+                                self.window_loop.window.set_tooltip(menu.id, &message).map_err(SetTooltip)?;
                             }
                         }
                         InputEvent::SetIcon(icon) => {
-                            if self.window_loop.menu.is_some() {
+                            if let Some(menu) = self.window_loop.menus.get(0) {
                                 if let Some(icon) = self.icons.get(icon.as_usize()) {
-                                    self.window_loop.window.set_icon(icon).map_err(SetIcon)?;
+                                    self.window_loop.window.set_icon(menu.id, icon).map_err(SetIcon)?;
                                 }
                             }
                         }
                         InputEvent::Notification(id, n) => {
-                            if self.visible.is_some() {
-                                self.pending.push_back((id, n));
-                            } else {
-                                self.visible = Some(id);
-                                self.window_loop.window.send_notification(id, n).map_err(SendNotification)?;
+                            if let Some(menu) = self.window_loop.menus.get(0) {
+                                if self.visible.is_some() {
+                                    self.pending.push_back((id, n));
+                                } else {
+                                    self.visible = Some(id);
+                                    self.window_loop.window.send_notification(menu.id, id, n).map_err(SendNotification)?;
+                                }
                             }
                         }
                         InputEvent::Shutdown => {
@@ -127,7 +132,6 @@ impl EventLoop {
 
 impl Drop for EventLoop {
     fn drop(&mut self) {
-        _ = self.window_loop.window.delete_icon();
         _ = self.window_loop.join();
     }
 }

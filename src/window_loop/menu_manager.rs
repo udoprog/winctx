@@ -13,12 +13,15 @@ use super::WindowEvent;
 /// Helper to manager clipboard polling state.
 pub(super) struct MenuManager<'a> {
     events_tx: &'a UnboundedSender<WindowEvent>,
-    hmenu: winuser::HMENU,
+    hmenus: &'a [winuser::HMENU],
 }
 
 impl<'a> MenuManager<'a> {
-    pub(super) fn new(events_tx: &'a UnboundedSender<WindowEvent>, hmenu: winuser::HMENU) -> Self {
-        Self { events_tx, hmenu }
+    pub(super) fn new(
+        events_tx: &'a UnboundedSender<WindowEvent>,
+        hmenus: &'a [winuser::HMENU],
+    ) -> Self {
+        Self { events_tx, hmenus }
     }
 
     pub(super) unsafe fn dispatch(&mut self, msg: &MSG) -> bool {
@@ -47,7 +50,7 @@ impl<'a> MenuManager<'a> {
                         winuser::SetForegroundWindow(msg.hwnd);
 
                         winuser::TrackPopupMenu(
-                            self.hmenu,
+                            self.hmenus[0],
                             0,
                             p.x,
                             p.y,
@@ -62,7 +65,7 @@ impl<'a> MenuManager<'a> {
                 }
             }
             winuser::WM_MENUCOMMAND => {
-                let menu_id = winuser::GetMenuItemID(self.hmenu, msg.wParam as i32) as i32;
+                let menu_id = winuser::GetMenuItemID(self.hmenus[0], msg.wParam as i32) as i32;
 
                 if menu_id != -1 {
                     _ = self

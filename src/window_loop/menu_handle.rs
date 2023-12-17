@@ -7,15 +7,33 @@ use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 
 use crate::convert::ToWide;
 
+/// The identifier for a notification menu.
+#[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
+pub struct MenuId(u32);
+
+impl MenuId {
+    /// Construct a new menu id.
+    pub(crate) fn new(id: u32) -> Self {
+        Self(id)
+    }
+
+    /// Get the menu id.
+    pub(crate) fn id(&self) -> u32 {
+        self.0
+    }
+}
+
 #[repr(C)]
 pub(crate) struct MenuHandle {
+    pub(crate) id: MenuId,
     pub(crate) hmenu: winuser::HMENU,
     pub(crate) initial_icon: Option<usize>,
 }
 
 impl MenuHandle {
     /// Construct a new menu handle.
-    pub(crate) fn new(initial_icon: Option<usize>) -> io::Result<Self> {
+    pub(crate) fn new(id: MenuId, initial_icon: Option<usize>) -> io::Result<Self> {
         unsafe {
             // Setup menu
             let hmenu = winuser::CreatePopupMenu();
@@ -25,6 +43,7 @@ impl MenuHandle {
             }
 
             let menu = Self {
+                id,
                 hmenu,
                 initial_icon,
             };

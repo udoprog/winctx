@@ -18,5 +18,5 @@ mod window_handle;
 use self::window_class_handle::WindowClassHandle;
 mod window_class_handle;
 
-pub(super) use self::menu_handle::MenuHandle;
+pub(super) use self::menu_handle::{MenuHandle, MenuId};
 mod menu_handle;
