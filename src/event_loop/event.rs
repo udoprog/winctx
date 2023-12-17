@@ -1,4 +1,4 @@
-use crate::{AreaId, Error, MenuItemId, NotificationId};
+use crate::{AreaId, Error, ItemId, NotificationId};
 
 /// A clipbaord event.
 #[derive(Debug)]
@@ -14,8 +14,8 @@ pub enum ClipboardEvent {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Event {
-    /// The menu item identified by [`MenuItemId`] has been clicked.
-    MenuItemClicked(AreaId, MenuItemId),
+    /// The menu item identified by [`ItemId`] has been clicked.
+    MenuItemClicked(ItemId),
     /// An icon has been clicked.
     IconClicked(AreaId),
     /// Indicates that the notification with the associated token has been clicked.

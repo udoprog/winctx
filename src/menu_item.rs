@@ -1,12 +1,10 @@
 //! Types related to menu construction.
 
-use std::fmt;
+use crate::{ItemId, ModifyMenuItem};
 
-use crate::ModifyMenuItem;
-
-pub(crate) enum MenuItemKind {
+pub(super) enum MenuItemKind {
     Separator,
-    MenyEntry { text: String },
+    String { text: String },
 }
 
 /// A menu item in the context menu.
@@ -15,71 +13,58 @@ pub(crate) enum MenuItemKind {
 /// * [`MenuItem::separator`].
 /// * [`MenuItem::entry`].
 pub struct MenuItem {
+    pub(crate) item_id: ItemId,
     pub(crate) kind: MenuItemKind,
     pub(crate) initial: ModifyMenuItem,
 }
 
 impl MenuItem {
-    /// Construct a menu separator.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use winctx::{PopupMenu, MenuItem};
-    ///
-    /// let mut menu = PopupMenu::new();
-    /// menu.push(MenuItem::separator());
-    /// ```
-    pub fn separator() -> Self {
+    pub(super) fn new(item_id: ItemId, kind: MenuItemKind) -> Self {
         Self {
-            kind: MenuItemKind::Separator,
+            item_id,
+            kind,
             initial: ModifyMenuItem::default(),
         }
     }
 
-    /// Construct a menu entry.
-    ///
-    /// The `default` parameter indicates whether the entry shoudl be
-    /// highlighted.
-    ///
-    /// This returns a token which can be matched against the token returned in
-    /// [`Event::MenuItemClicked`].
-    ///
-    /// [`Event::MenuItemClicked`]: crate::Event::MenuItemClicked
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use winctx::{PopupMenu, MenuItem};
-    ///
-    /// let mut menu = PopupMenu::new();
-    /// menu.push(MenuItem::entry("Example Application"));
-    /// menu.push(MenuItem::entry("Exit..."));
-    /// ```
-    pub fn entry<T>(text: T) -> Self
-    where
-        T: fmt::Display,
-    {
-        Self {
-            kind: MenuItemKind::MenyEntry {
-                text: text.to_string(),
-            },
-            initial: ModifyMenuItem::default(),
-        }
+    /// Get the identifier of the menu item.
+    pub fn id(&self) -> ItemId {
+        self.item_id
     }
 
-    /// Set the initial state of the menu item.
+    /// Set the checked state of the menu item.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{PopupMenu, MenuItem, ModifyMenuItem};
+    /// use winctx::WindowBuilder;
     ///
-    /// let mut menu = PopupMenu::new();
-    /// menu.push(MenuItem::entry("Example Application")
-    ///    .initial(ModifyMenuItem::new().checked(true)));
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area();
+    ///
+    /// let mut menu = area.popup_menu();
+    /// menu.push_entry("Example Application").checked(true);
     /// ```
-    pub fn initial(self, initial: ModifyMenuItem) -> Self {
-        Self { initial, ..self }
+    pub fn checked(&mut self, checked: bool) -> &mut Self {
+        self.initial.checked(checked);
+        self
+    }
+
+    /// Set that the menu item should be highlighted.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    ///
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area();
+    ///
+    /// let mut menu = area.popup_menu();
+    /// menu.push_entry("Example Application").checked(true);
+    /// ```
+    pub fn highlight(&mut self, highlight: bool) -> &mut Self {
+        self.initial.highlight(highlight);
+        self
     }
 }

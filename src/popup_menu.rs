@@ -1,35 +1,81 @@
-use crate::{MenuItem, MenuItemId};
+use std::fmt;
+
+use crate::menu_item::MenuItemKind;
+use crate::{AreaId, ItemId, MenuItem};
 
 /// The structure of a popup menu.
-#[derive(Default)]
 pub struct PopupMenu {
+    area_id: AreaId,
     pub(super) menu: Vec<MenuItem>,
     /// The default item in the menu.
-    pub(super) default: Option<MenuItemId>,
+    pub(super) default: Option<u32>,
 }
 
 impl PopupMenu {
     /// Construct a new empt popup menu.
-    pub fn new() -> Self {
-        Self::default()
+    pub(super) fn new(area_id: AreaId) -> Self {
+        Self {
+            area_id,
+            menu: Vec::new(),
+            default: None,
+        }
     }
 
-    /// Push a new menu item.
+    /// Construct a menu entry.
+    ///
+    /// The `default` parameter indicates whether the entry shoudl be
+    /// highlighted.
+    ///
+    /// This returns a token which can be matched against the token returned in
+    /// [`Event::MenuItemClicked`].
+    ///
+    /// [`Event::MenuItemClicked`]: crate::Event::MenuItemClicked
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{PopupMenu, MenuItem};
+    /// use winctx::WindowBuilder;
     ///
-    /// let mut menu = PopupMenu::new();
-    /// menu.push(MenuItem::entry("Example Application"));
-    /// menu.push(MenuItem::separator());
-    /// menu.push(MenuItem::entry("Exit..."));
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area();
+    ///
+    /// let menu = area.popup_menu();
+    /// menu.push_entry("Example Application");
+    /// menu.push_separator();
+    /// menu.push_entry("Exit...");
     /// ```
-    pub fn push(&mut self, menu_item: MenuItem) -> MenuItemId {
-        let token = MenuItemId::new(self.menu.len() as u32);
-        self.menu.push(menu_item);
-        token
+    pub fn push_entry<T>(&mut self, text: T) -> &mut MenuItem
+    where
+        T: fmt::Display,
+    {
+        let menu_id = ItemId::new(self.area_id.id(), self.menu.len() as u32);
+        self.menu.push(MenuItem::new(
+            menu_id,
+            MenuItemKind::String {
+                text: text.to_string(),
+            },
+        ));
+        self.menu.last_mut().unwrap()
+    }
+
+    /// Construct a menu separator.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    ///
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area();
+    ///
+    /// let menu = area.popup_menu();
+    /// menu.push_separator();
+    /// ```
+    pub fn push_separator(&mut self) -> &mut MenuItem {
+        let menu_id = ItemId::new(self.area_id.id(), self.menu.len() as u32);
+        self.menu
+            .push(MenuItem::new(menu_id, MenuItemKind::Separator));
+        self.menu.last_mut().unwrap()
     }
 
     /// Set the default item in the menu.
@@ -37,15 +83,20 @@ impl PopupMenu {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{PopupMenu, MenuItem};
+    /// use winctx::WindowBuilder;
     ///
-    /// let mut menu = PopupMenu::new();
-    /// let first = menu.push(MenuItem::entry("Example Application"));
-    /// menu.push(MenuItem::separator());
-    /// menu.push(MenuItem::entry("Exit..."));
+    /// let mut window = WindowBuilder::new("se.tedro.Example");
+    /// let area = window.new_area();
+    ///
+    /// let menu = area.popup_menu();
+    /// let first = menu.push_entry("Example Application").id();
+    /// menu.push_separator();
+    /// menu.push_entry("Exit...");
     /// menu.set_default(first);
     /// ```
-    pub fn set_default(&mut self, menu_item_id: MenuItemId) {
-        self.default = Some(menu_item_id);
+    pub fn set_default(&mut self, menu_item_id: ItemId) {
+        if self.area_id == menu_item_id.area_id() {
+            self.default = Some(menu_item_id.id());
+        }
     }
 }

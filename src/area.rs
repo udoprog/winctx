@@ -1,13 +1,15 @@
-use crate::{ModifyArea, PopupMenu};
+use std::fmt;
+
+use crate::{AreaId, Icon, ModifyArea, PopupMenu};
 
 /// A notification area.
 ///
 /// This is opened when you click on the window icon that lives in the system
 /// tray.
-#[derive(Default)]
 pub struct Area {
+    pub(super) id: AreaId,
     pub(super) popup_menu: Option<PopupMenu>,
-    pub(super) initial: Option<ModifyArea>,
+    pub(super) initial: ModifyArea,
 }
 
 impl Area {
@@ -17,23 +19,43 @@ impl Area {
     /// notification area.
     ///
     /// To set an icon or a popup menu, use the relevant builder methods.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Set the initial state of the notification area.
-    pub fn initial(self, initial_icon: ModifyArea) -> Self {
+    pub fn new(area_id: AreaId) -> Self {
         Self {
-            initial: Some(initial_icon),
-            ..self
+            id: area_id,
+            popup_menu: None,
+            initial: ModifyArea::default(),
         }
     }
 
-    /// Set a popup menu that should be used.
-    pub fn popup_menu(self, popup_menu: PopupMenu) -> Self {
-        Self {
-            popup_menu: Some(popup_menu),
-            ..self
+    /// Get the area identifier.
+    pub fn id(&self) -> AreaId {
+        self.id
+    }
+
+    /// Set the icon of the notification area.
+    #[inline]
+    pub fn icon(&mut self, icon: Icon) -> &mut Self {
+        self.initial.icon(icon);
+        self
+    }
+
+    /// Set the tooltip of the notification area.
+    #[inline]
+    pub fn tooltip<T>(&mut self, tooltip: T) -> &mut Self
+    where
+        T: fmt::Display,
+    {
+        self.initial.tooltip(tooltip);
+        self
+    }
+
+    /// Set that a popup menu should be used and return a handle to populate it.
+    #[inline]
+    pub fn popup_menu(&mut self) -> &mut PopupMenu {
+        if self.popup_menu.is_none() {
+            self.popup_menu = Some(PopupMenu::new(self.id));
         }
+
+        self.popup_menu.as_mut().unwrap()
     }
 }

@@ -2,7 +2,7 @@ use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
-use winctx::{Area, Event, Icons, MenuItem, ModifyArea, PopupMenu, WindowBuilder};
+use winctx::{Event, Icons, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -11,29 +11,21 @@ async fn main() -> Result<()> {
     let mut icons = Icons::new();
     let default_icon = icons.push_buffer(ICON, 22, 22);
 
-    let mut menu1 = PopupMenu::new();
-    let first = menu1.push(MenuItem::entry("Menu 1"));
-    menu1.set_default(first);
-
-    let mut menu2 = PopupMenu::new();
-    let first = menu2.push(MenuItem::entry("Menu 2"));
-    menu2.set_default(first);
-
     let mut builder = WindowBuilder::new("se.tedro.Example")
         .icons(icons)
         .clipboard_events(true);
 
-    let menu1 = builder.push_area(
-        Area::new()
-            .initial(ModifyArea::new().icon(default_icon))
-            .popup_menu(menu1),
-    );
+    let area1 = builder.new_area().icon(default_icon);
 
-    let menu2 = builder.push_area(
-        Area::new()
-            .initial(ModifyArea::new().icon(default_icon))
-            .popup_menu(menu2),
-    );
+    let menu1 = area1.popup_menu();
+    let first = menu1.push_entry("Menu 1").id();
+    menu1.set_default(first);
+
+    let area2 = builder.new_area().icon(default_icon);
+
+    let menu2 = area2.popup_menu();
+    let second = menu2.push_entry("Menu 2").id();
+    menu2.set_default(first);
 
     let (sender, mut event_loop) = builder.build().await?;
 
@@ -56,14 +48,14 @@ async fn main() -> Result<()> {
             Event::IconClicked(area_id) => {
                 println!("Icon clicked: {area_id:?}");
             }
-            Event::MenuItemClicked(area_id, item_id) => {
-                println!("Menu entry clicked: {area_id:?}: {item_id:?}");
+            Event::MenuItemClicked(item_id) => {
+                println!("Menu entry clicked: {item_id:?}");
 
-                if area_id == menu1 {
+                if item_id == first {
                     println!("Menu 1 clicked");
                 }
 
-                if area_id == menu2 {
+                if item_id == second {
                     println!("Menu 2 clicked");
                 }
             }

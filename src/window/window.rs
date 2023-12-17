@@ -37,9 +37,9 @@ impl FindWindow {
     /// Find window by the specified class name.
     ///
     /// The `class` argument matches what has been provided to
-    /// [`WindowBuilder::class_name`].
+    /// [`WindowBuilder::new`].
     ///
-    /// [`WindowBuilder::class_name`]: crate::WindowBuilder::class_name
+    /// [`WindowBuilder::new`]: crate::WindowBuilder::new
     ///
     /// # Examples
     ///

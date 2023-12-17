@@ -6,7 +6,7 @@ use windows_sys::Win32::Foundation::{FALSE, TRUE};
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 
 use crate::convert::ToWide;
-use crate::{MenuItemId, ModifyMenuItem};
+use crate::ModifyMenuItem;
 
 #[repr(C)]
 pub(crate) struct PopupMenuHandle {
@@ -47,7 +47,7 @@ impl PopupMenuHandle {
     /// Add a menu entry.
     pub(crate) fn add_menu_entry(
         &self,
-        menu_item_id: MenuItemId,
+        menu_item_id: u32,
         string: &str,
         default: bool,
         modify: &ModifyMenuItem,
@@ -55,7 +55,7 @@ impl PopupMenuHandle {
         let mut item = new_menuitem();
         item.fMask = winuser::MIIM_FTYPE | winuser::MIIM_ID;
         item.fType = winuser::MFT_STRING;
-        item.wID = menu_item_id.id();
+        item.wID = menu_item_id;
 
         let string = string.to_wide_null();
 
@@ -63,8 +63,7 @@ impl PopupMenuHandle {
         modify_default(&mut item, default);
         apply(&mut item, modify);
 
-        let result =
-            unsafe { winuser::InsertMenuItemW(self.hmenu, menu_item_id.id(), TRUE, &item) };
+        let result = unsafe { winuser::InsertMenuItemW(self.hmenu, menu_item_id, TRUE, &item) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());
@@ -76,19 +75,19 @@ impl PopupMenuHandle {
     /// Add a menu separator at the given index.
     pub(crate) fn add_menu_separator(
         &self,
-        menu_item_id: MenuItemId,
+        menu_item_id: u32,
         default: bool,
         modify: &ModifyMenuItem,
     ) -> io::Result<()> {
         let mut item = new_menuitem();
         item.fMask = winuser::MIIM_FTYPE | winuser::MIIM_ID;
         item.fType = winuser::MFT_SEPARATOR;
-        item.wID = menu_item_id.id();
+        item.wID = menu_item_id;
 
         apply(&mut item, modify);
         modify_default(&mut item, default);
 
-        let result = unsafe { winuser::InsertMenuItemW(self.hmenu, menu_item_id.id(), 1, &item) };
+        let result = unsafe { winuser::InsertMenuItemW(self.hmenu, menu_item_id, 1, &item) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());

@@ -8,7 +8,6 @@ use crate::error::{SetupIconsError, SetupMenuError};
 use crate::menu_item::MenuItemKind;
 use crate::window_loop::PopupMenuHandle;
 use crate::window_loop::{AreaHandle, IconHandle, WindowLoop};
-use crate::MenuItemId;
 use crate::PopupMenu;
 use crate::{Area, AreaId, EventLoop, Icons, Result, Sender};
 
@@ -87,7 +86,7 @@ impl WindowBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::{Area, Icons, WindowBuilder, ModifyArea};
+    /// use winctx::{Area, Icons, WindowBuilder};
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
@@ -96,13 +95,12 @@ impl WindowBuilder {
     /// let icon = icons.push_buffer(ICON, 22, 22);
     ///
     /// let mut builder = WindowBuilder::new("se.tedro.Example").icons(icons);
-    /// let area = Area::new().initial(ModifyArea::new().icon(icon));
-    /// let area_id = builder.push_area(area);
+    /// builder.new_area().icon(icon);
     /// ```
-    pub fn push_area(&mut self, area: Area) -> AreaId {
+    pub fn new_area(&mut self) -> &mut Area {
         let id = AreaId::new(self.areas.len() as u32);
-        self.areas.push(area);
-        id
+        self.areas.push(Area::new(id));
+        self.areas.last_mut().unwrap()
     }
 
     /// Associate custom icons with the window.
@@ -115,18 +113,19 @@ impl WindowBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::{Icons, Area, WindowBuilder, ModifyArea};
+    /// use winctx::{Icons, Area, WindowBuilder};
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
     ///
     /// let mut icons = Icons::new();
-    /// let default_icon = icons.push_buffer(ICON, 22, 22);
-    /// let area = Area::new()
-    ///     .initial(ModifyArea::new().icon(default_icon));
+    /// let icon = icons.push_buffer(ICON, 22, 22);
     ///
-    /// let mut builder = WindowBuilder::new("se.tedro.Example")
+    /// let mut window = WindowBuilder::new("se.tedro.Example")
+    ///     .window_name("Example Application")
     ///     .icons(icons);
+    ///
+    /// let area = window.new_area().icon(icon).tooltip("Example Application");
     /// ```
     pub fn icons(self, icons: Icons) -> Self {
         Self { icons, ..self }
@@ -151,10 +150,7 @@ impl WindowBuilder {
                 None
             };
 
-            if let Some(modify) = &m.initial {
-                initial.push((area_id, modify));
-            }
-
+            initial.push((area_id, &m.initial));
             menus.push(AreaHandle::new(area_id, popup_menu));
         }
 
@@ -205,7 +201,7 @@ impl WindowBuilder {
 fn build_menu(menu: &mut PopupMenuHandle, popup_menu: &PopupMenu) -> Result<(), SetupMenuError> {
     for (index, item) in popup_menu.menu.iter().enumerate() {
         debug_assert!(u32::try_from(index).is_ok());
-        let menu_item_id = MenuItemId::new(index as u32);
+        let menu_item_id = index as u32;
 
         match &item.kind {
             MenuItemKind::Separator => {
@@ -214,7 +210,7 @@ fn build_menu(menu: &mut PopupMenuHandle, popup_menu: &PopupMenu) -> Result<(), 
                 menu.add_menu_separator(menu_item_id, default, &item.initial)
                     .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
             }
-            MenuItemKind::MenyEntry { text } => {
+            MenuItemKind::String { text } => {
                 let default = popup_menu.default == Some(menu_item_id);
 
                 menu.add_menu_entry(menu_item_id, text.as_str(), default, &item.initial)

@@ -39,31 +39,27 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, Area, WindowBuilder, ModifyArea};
+//! use winctx::{Event, Icons, WindowBuilder};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
 //!
 //! # #[tokio::main] async fn main() -> winctx::Result<()> {
 //! let mut icons = Icons::new();
-//! let initial_icon = icons.push_buffer(ICON, 22, 22);
-//!
-//! let mut menu = PopupMenu::new();
-//!
-//! let first = menu.push(MenuItem::entry("Example Application"));
-//! menu.push(MenuItem::separator());
-//! let quit = menu.push(MenuItem::entry("Quit"));
-//! menu.set_default(first);
+//! let icon = icons.push_buffer(ICON, 22, 22);
 //!
 //! let mut window = WindowBuilder::new("se.tedro.Example")
 //!     .window_name("Example Application")
 //!     .icons(icons);
 //!
-//! let area_id = window.push_area(
-//!     Area::new()
-//!         .initial(ModifyArea::new().icon(initial_icon))
-//!         .popup_menu(menu)
-//! );
+//! let area = window.new_area().icon(icon);
+//!
+//! let menu = area.popup_menu();
+//!
+//! let first = menu.push_entry("Example Application").id();
+//! menu.push_separator();
+//! let quit = menu.push_entry("Quit").id();
+//! menu.set_default(first);
 //!
 //! let (sender, mut event_loop) = window
 //!     .build()
@@ -85,10 +81,10 @@
 //!     };
 //!
 //!     match event {
-//!         Event::MenuItemClicked(area_id, token) => {
-//!             println!("Menu entry clicked: {area_id:?}: {token:?}");
+//!         Event::MenuItemClicked(item_id) => {
+//!             println!("Menu entry clicked: {item_id:?}");
 //!
-//!             if token == quit {
+//!             if item_id == quit {
 //!                 sender.shutdown();
 //!             }
 //!         }
@@ -137,8 +133,8 @@ pub use self::error::Error;
 mod error;
 
 #[doc(inline)]
-pub use self::menu_item_id::MenuItemId;
-mod menu_item_id;
+pub use self::item_id::ItemId;
+mod item_id;
 
 #[doc(inline)]
 pub use self::notification_id::NotificationId;
@@ -149,7 +145,7 @@ pub use self::area_id::AreaId;
 mod area_id;
 
 #[doc(inline)]
-pub use self::event_loop::{ClipboardEvent, Event, EventLoop, Sender};
+pub use self::event_loop::{ClipboardEvent, Event, EventLoop};
 mod event_loop;
 
 #[doc(inline)]
@@ -183,7 +179,7 @@ pub use self::named_mutex::NamedMutex;
 mod named_mutex;
 
 #[doc(inline)]
-pub use self::menu_item::MenuItem;
+use self::menu_item::MenuItem;
 pub(crate) mod menu_item;
 
 #[doc(inline)]
@@ -191,12 +187,16 @@ pub use self::icon::Icon;
 mod icon;
 
 #[doc(inline)]
-pub use self::modify_area::ModifyArea;
+use self::modify_area::ModifyArea;
 mod modify_area;
 
 #[doc(inline)]
-pub use self::modify_menu_item::ModifyMenuItem;
+use self::modify_menu_item::ModifyMenuItem;
 mod modify_menu_item;
+
+use self::sender::InputEvent;
+pub use self::sender::Sender;
+pub mod sender;
 
 #[cfg_attr(windows, path = "windows/real.rs")]
 #[cfg_attr(not(windows), path = "windows/fake.rs")]

@@ -42,29 +42,25 @@ The basic loop looks like this:
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, Area, WindowBuilder, ModifyArea};
+use winctx::{Event, MenuItem, Icons, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 let mut icons = Icons::new();
-let initial_icon = icons.push_buffer(ICON, 22, 22);
-
-let mut menu = PopupMenu::new();
-
-let first = menu.push(MenuItem::entry("Example Application"));
-menu.push(MenuItem::separator());
-let quit = menu.push(MenuItem::entry("Quit"));
-menu.set_default(first);
+let icon = icons.push_buffer(ICON, 22, 22);
 
 let mut window = WindowBuilder::new("se.tedro.Example")
     .window_name("Example Application")
     .icons(icons);
 
-let area_id = window.push_area(
-    Area::new()
-        .initial(ModifyArea::new().icon(initial_icon))
-        .popup_menu(menu)
-);
+let area = window.new_area().icon(icon);
+
+let menu = area.popup_menu();
+
+let first = menu.push(MenuItem::entry("Example Application"));
+menu.push(MenuItem::separator());
+let quit = menu.push(MenuItem::entry("Quit"));
+menu.set_default(first);
 
 let (sender, mut event_loop) = window
     .build()
@@ -86,10 +82,10 @@ loop {
     };
 
     match event {
-        Event::MenuItemClicked(area_id, token) => {
-            println!("Menu entry clicked: {area_id:?}: {token:?}");
+        Event::MenuItemClicked(item_id) => {
+            println!("Menu entry clicked: {item_id:?}");
 
-            if token == quit {
+            if item_id == quit {
                 sender.shutdown();
             }
         }

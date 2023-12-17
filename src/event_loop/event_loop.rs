@@ -4,13 +4,13 @@ use tokio::sync::mpsc;
 
 use crate::error::Error;
 use crate::error::ErrorKind::*;
-use crate::menu_item_id::MenuItemId;
+use crate::item_id::ItemId;
 use crate::window_loop::IconHandle;
 use crate::window_loop::{WindowEvent, WindowLoop};
 use crate::NotificationId;
-use crate::{AreaId, Notification, Result};
+use crate::{AreaId, InputEvent, Notification, Result};
 
-use super::{Event, InputEvent};
+use super::Event;
 
 /// The event loop being run.
 #[repr(C)]
@@ -65,8 +65,8 @@ impl EventLoop {
                             let icon = modify.icon.and_then(|icon| self.icons.get(icon.as_usize()));
                             self.window_loop.window.modify_notification(area_id, icon, modify.tooltip.as_deref()).map_err(ModifyNotification)?;
                         }
-                        InputEvent::ModifyMenuItem(area_id, token, modify) => {
-                            let Some(menu) = self.window_loop.areas.get(area_id.id() as usize) else {
+                        InputEvent::ModifyMenuItem { item_id, modify } => {
+                            let Some(menu) = self.window_loop.areas.get(item_id.area_id().id() as usize) else {
                                 continue;
                             };
 
@@ -74,7 +74,7 @@ impl EventLoop {
                                 continue;
                             };
 
-                            popup_menu.modify_menu_item(token.id(), &modify).map_err(ModifyMenuItem)?;
+                            popup_menu.modify_menu_item(item_id.id(), &modify).map_err(ModifyMenuItem)?;
                         }
                         InputEvent::Notification(area_id, id, n) => {
                             if self.visible.is_some() {
@@ -93,7 +93,7 @@ impl EventLoop {
                 e = self.window_loop.tick() => {
                     match e {
                         WindowEvent::MenuItemClicked(area_id, idx) => {
-                            return Ok(Event::MenuItemClicked(area_id, MenuItemId::new(idx)));
+                            return Ok(Event::MenuItemClicked(ItemId::new(area_id.id(), idx)));
                         },
                         WindowEvent::Clipboard(clipboard_event) => {
                             return Ok(Event::Clipboard(clipboard_event));

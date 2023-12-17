@@ -1,58 +1,51 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{
-    Area, Event, Icons, MenuItem, ModifyArea, ModifyMenuItem, Notification, PopupMenu,
-    WindowBuilder,
-};
+use winctx::{Event, Icons, Notification, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
+    let mut has_tooltip = true;
+    let mut is_checked = true;
+    let mut is_highlighted = true;
+
     let mut icons = Icons::new();
     let initial_icon = icons.push_buffer(ICON, 22, 22);
-
-    let mut menu = PopupMenu::new();
-    let title = menu.push(MenuItem::entry("Hello World"));
-    let single = menu.push(MenuItem::entry("Show notification"));
-    let multiple = menu.push(MenuItem::entry("Show multiple notifications"));
-
-    let tooltip =
-        menu.push(MenuItem::entry("Toggle tooltip").initial(ModifyMenuItem::new().checked(true)));
-    let checked =
-        menu.push(MenuItem::entry("Toggle checked").initial(ModifyMenuItem::new().checked(true)));
-
-    let highlighted = menu.push(
-        MenuItem::entry("Toggle highlighted")
-            .initial(ModifyMenuItem::new().checked(true).highlight(true)),
-    );
-
-    menu.push(MenuItem::separator());
-
-    let quit = menu.push(MenuItem::entry("Quit"));
-
-    menu.set_default(title);
 
     let mut window = WindowBuilder::new("se.tedro.Example")
         .window_name("Example Application")
         .icons(icons);
 
-    window.push_area(
-        Area::new()
-            .initial(
-                ModifyArea::new()
-                    .icon(initial_icon)
-                    .tooltip("Example Application"),
-            )
-            .popup_menu(menu),
-    );
+    let area = window.new_area().icon(initial_icon);
+
+    if has_tooltip {
+        area.tooltip("Example Application");
+    }
+
+    let menu = area.popup_menu();
+
+    let title = menu.push_entry("Hello World").id();
+    menu.push_entry("Show notification");
+    menu.push_entry("Show multiple notifications");
+
+    menu.push_entry("Toggle tooltip").checked(has_tooltip);
+    menu.push_entry("Toggle checked").checked(is_checked);
+
+    menu.push_entry("Toggle highlighted")
+        .checked(is_highlighted)
+        .highlight(is_highlighted);
+
+    menu.push_separator();
+
+    let quit = menu.push_entry("Quit").id();
+
+    menu.set_default(title);
+
+    let area_id = area.id();
 
     let (sender, mut event_loop) = window.build().await?;
-
-    let mut has_tooltip = true;
-    let mut is_checked = true;
-    let mut is_highlighted = true;
 
     let mut ctrl_c = pin!(ctrl_c());
     let mut shutdown = false;
@@ -73,65 +66,55 @@ async fn main() -> winctx::Result<()> {
             Event::IconClicked(area_id) => {
                 println!("Icon clicked: {area_id:?}");
             }
-            Event::MenuItemClicked(area_id, token) => {
-                println!("Menu entry clicked: {area_id:?}: {token:?}");
+            Event::MenuItemClicked(item_id) => {
+                println!("Menu entry clicked: {item_id:?}");
 
-                if token == single {
-                    sender.notification(
-                        area_id,
-                        Notification::new()
-                            .title("This is a title")
-                            .message("This is a body")
-                            .large_icon(),
-                    );
-                    continue;
-                }
-
-                if token == multiple {
-                    sender.notification(area_id, Notification::new().message("First"));
-                    sender.notification(area_id, Notification::new().message("Second"));
-                    continue;
-                }
-
-                if token == quit {
-                    sender.shutdown();
-                }
-
-                if token == tooltip {
-                    if has_tooltip {
-                        sender.modify_area(area_id, ModifyArea::new().tooltip(""));
-                    } else {
-                        sender
-                            .modify_area(area_id, ModifyArea::new().tooltip("This is a tooltip!"));
+                match item_id {
+                    winctx::item_id!(0, 1) => {
+                        sender.notification(
+                            area_id,
+                            Notification::new()
+                                .title("This is a title")
+                                .message("This is a body")
+                                .large_icon(),
+                        );
                     }
+                    winctx::item_id!(0, 2) => {
+                        sender.notification(area_id, Notification::new().message("First"));
+                        sender.notification(area_id, Notification::new().message("Second"));
+                    }
+                    winctx::item_id!(0, 3) => {
+                        if has_tooltip {
+                            sender.modify_area(area_id).tooltip("").send();
+                        } else {
+                            sender
+                                .modify_area(area_id)
+                                .tooltip("This is a tooltip!")
+                                .send();
+                        }
 
-                    has_tooltip = !has_tooltip;
-
-                    sender.modify_menu_item(
-                        area_id,
-                        token,
-                        ModifyMenuItem::new().checked(has_tooltip),
-                    );
-                }
-
-                if token == checked {
-                    is_checked = !is_checked;
-                    sender.modify_menu_item(
-                        area_id,
-                        token,
-                        ModifyMenuItem::new().checked(is_checked),
-                    );
-                }
-
-                if token == highlighted {
-                    is_highlighted = !is_highlighted;
-                    sender.modify_menu_item(
-                        area_id,
-                        token,
-                        ModifyMenuItem::new()
+                        has_tooltip = !has_tooltip;
+                        sender.modify_menu_item(item_id).checked(has_tooltip).send();
+                    }
+                    winctx::item_id!(0, 4) => {
+                        is_checked = !is_checked;
+                        sender.modify_menu_item(item_id).checked(is_checked).send();
+                    }
+                    winctx::item_id!(0, 5) => {
+                        is_highlighted = !is_highlighted;
+                        sender
+                            .modify_menu_item(item_id)
                             .checked(is_highlighted)
-                            .highlight(is_highlighted),
-                    );
+                            .highlight(is_highlighted)
+                            .send();
+                    }
+                    _ => {
+                        println!("Unhandled: {item_id:?}");
+                    }
+                }
+
+                if item_id == quit {
+                    sender.shutdown();
                 }
             }
             Event::NotificationClicked(area_id, token) => {
