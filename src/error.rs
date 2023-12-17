@@ -38,10 +38,8 @@ impl fmt::Display for Error {
             ErrorKind::BuildPopupMenu(..) => write!(f, "Failed to build popup menu"),
             ErrorKind::SetupIcons(..) => write!(f, "Failed to setup icons"),
             ErrorKind::SetupMenu(..) => write!(f, "Failed to setup menu"),
-            ErrorKind::ClearTooltip(..) => write!(f, "Failed to clear tooltip message"),
-            ErrorKind::SetTooltip(..) => write!(f, "Failed to set tooltip message"),
-            ErrorKind::SetIcon(..) => write!(f, "Failed to set icon from buffer"),
-            ErrorKind::AddIcon(..) => write!(f, "Failed to add icon"),
+            ErrorKind::AddNotification(..) => write!(f, "Failed to add notification area"),
+            ErrorKind::ModifyNotification(..) => write!(f, "Failed to modify notification area"),
             ErrorKind::SendNotification(..) => write!(f, "Failed to send notification"),
             ErrorKind::CreateMutex(..) => write!(f, "Failed to construct mutex"),
             ErrorKind::OpenRegistryKey(..) => write!(f, "Failed to open registry key"),
@@ -67,10 +65,8 @@ impl std::error::Error for Error {
             ErrorKind::BuildPopupMenu(error) => Some(error),
             ErrorKind::SetupIcons(error) => Some(error),
             ErrorKind::SetupMenu(error) => Some(error),
-            ErrorKind::ClearTooltip(error) => Some(error),
-            ErrorKind::SetTooltip(error) => Some(error),
-            ErrorKind::SetIcon(error) => Some(error),
-            ErrorKind::AddIcon(error) => Some(error),
+            ErrorKind::AddNotification(error) => Some(error),
+            ErrorKind::ModifyNotification(error) => Some(error),
             ErrorKind::SendNotification(error) => Some(error),
             ErrorKind::CreateMutex(error) => Some(error),
             ErrorKind::OpenRegistryKey(error) => Some(error),
@@ -140,10 +136,8 @@ pub(super) enum ErrorKind {
     BuildPopupMenu(io::Error),
     SetupIcons(SetupIconsError),
     SetupMenu(SetupMenuError),
-    ClearTooltip(io::Error),
-    SetTooltip(io::Error),
-    AddIcon(io::Error),
-    SetIcon(io::Error),
+    AddNotification(io::Error),
+    ModifyNotification(io::Error),
     SendNotification(io::Error),
     CreateMutex(io::Error),
     OpenRegistryKey(io::Error),
@@ -174,6 +168,7 @@ impl std::error::Error for SetupIconsError {
         }
     }
 }
+
 #[derive(Debug)]
 pub(super) enum SetupMenuError {
     AddMenuEntry(usize, io::Error),

@@ -213,6 +213,10 @@ pub(crate) mod menu_item;
 pub use self::icon::Icon;
 mod icon;
 
+#[doc(inline)]
+pub use self::modify_area::ModifyArea;
+mod modify_area;
+
 #[cfg_attr(windows, path = "windows/real.rs")]
 #[cfg_attr(not(windows), path = "windows/fake.rs")]
 mod windows;

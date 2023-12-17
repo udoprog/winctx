@@ -120,6 +120,7 @@ impl WindowBuilder {
 
         let icons = self.setup_icons(&self.icons).map_err(SetupIcons)?;
         let mut menus = Vec::with_capacity(self.areas.len());
+        let mut initial = Vec::new();
 
         for (id, m) in self.areas.iter().enumerate() {
             let area_id = AreaId::new(id as u32);
@@ -132,8 +133,11 @@ impl WindowBuilder {
                 None
             };
 
-            let initial_icon = m.initial_icon.map(|i| i.as_usize());
-            menus.push(MenuHandle::new(area_id, popup_menu, initial_icon));
+            if let Some(modify) = &m.initial {
+                initial.push((area_id, modify));
+            }
+
+            menus.push(MenuHandle::new(area_id, popup_menu));
         }
 
         let mut window = WindowLoop::new(
@@ -149,14 +153,16 @@ impl WindowBuilder {
             window
                 .window
                 .add_notification(menu.area_id)
-                .map_err(AddIcon)?;
+                .map_err(AddNotification)?;
+        }
 
-            if let Some(icon) = menu.initial_icon {
-                window
-                    .window
-                    .set_icon(menu.area_id, &icons[icon])
-                    .map_err(SetIcon)?;
-            }
+        for (area_id, modify) in initial {
+            let icon = modify.icon.and_then(|icon| icons.get(icon.as_usize()));
+
+            window
+                .window
+                .modify_notification(area_id, icon, modify.tooltip.as_deref())
+                .map_err(ModifyNotification)?;
         }
 
         let event_loop = EventLoop::new(events_rx, window, icons);

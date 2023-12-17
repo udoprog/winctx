@@ -2,7 +2,7 @@ use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, MenuItem, NotificationArea, PopupMenu, WindowBuilder};
+use winctx::{Event, Icons, MenuItem, ModifyArea, NotificationArea, PopupMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -23,13 +23,13 @@ async fn main() -> Result<()> {
 
     let menu1 = builder.push_notification_area(
         NotificationArea::new()
-            .initial_icon(default_icon)
+            .initial(ModifyArea::new().icon(default_icon))
             .popup_menu(menu1),
     );
 
     let menu2 = builder.push_notification_area(
         NotificationArea::new()
-            .initial_icon(default_icon)
+            .initial(ModifyArea::new().icon(default_icon))
             .popup_menu(menu2),
     );
 

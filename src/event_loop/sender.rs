@@ -1,18 +1,14 @@
-use std::fmt;
-
 use tokio::sync::mpsc;
 
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use crate::{AreaId, Icon, Notification, Token};
+use crate::{AreaId, ModifyArea, Notification, Token};
 
 #[derive(Debug)]
 pub(crate) enum InputEvent {
     Shutdown,
-    ClearTooltip(AreaId),
-    SetTooltip(AreaId, String),
-    SetIcon(AreaId, Icon),
+    ModifyArea(AreaId, ModifyArea),
     Notification(AreaId, u32, Notification),
 }
 
@@ -37,25 +33,12 @@ impl Sender {
         }
     }
 
-    /// Set the icon of the context menu.
-    pub fn set_icon(&self, area_id: AreaId, icon: Icon) {
-        _ = self.inner.tx.send(InputEvent::SetIcon(area_id, icon));
-    }
-
-    /// Clear the tooltip of the context menu.
-    pub fn clear_tooltip(&self, area_id: AreaId) {
-        _ = self.inner.tx.send(InputEvent::ClearTooltip(area_id));
-    }
-
     /// Set the tooltip of the context menu.
-    pub fn set_tooltip<E>(&self, area_id: AreaId, message: E)
-    where
-        E: fmt::Display,
-    {
+    pub fn modify_area(&self, area_id: AreaId, modify_area: ModifyArea) {
         _ = self
             .inner
             .tx
-            .send(InputEvent::SetTooltip(area_id, message.to_string()));
+            .send(InputEvent::ModifyArea(area_id, modify_area));
     }
 
     /// Send the given notification.

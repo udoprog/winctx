@@ -1,7 +1,9 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, MenuItem, Notification, NotificationArea, PopupMenu, WindowBuilder};
+use winctx::{
+    Event, Icons, MenuItem, ModifyArea, Notification, NotificationArea, PopupMenu, WindowBuilder,
+};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -22,15 +24,18 @@ async fn main() -> winctx::Result<()> {
         .window_name("Example Application")
         .icons(icons);
 
-    let area_id = window.push_notification_area(
+    window.push_notification_area(
         NotificationArea::new()
-            .initial_icon(initial_icon)
+            .initial(
+                ModifyArea::new()
+                    .icon(initial_icon)
+                    .tooltip("Example Application"),
+            )
             .popup_menu(menu),
     );
 
     let (sender, mut event_loop) = window.build().await?;
 
-    sender.set_tooltip(area_id, "Hello!");
     let mut has_tooltip = true;
 
     let mut ctrl_c = pin!(ctrl_c());
@@ -78,9 +83,10 @@ async fn main() -> winctx::Result<()> {
 
                 if token == tooltip {
                     if has_tooltip {
-                        sender.clear_tooltip(area_id);
+                        sender.modify_area(area_id, ModifyArea::new().tooltip(""));
                     } else {
-                        sender.set_tooltip(area_id, "This is a tooltip!");
+                        sender
+                            .modify_area(area_id, ModifyArea::new().tooltip("This is a tooltip!"));
                     }
 
                     has_tooltip = !has_tooltip;

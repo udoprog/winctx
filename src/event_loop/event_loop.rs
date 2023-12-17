@@ -60,16 +60,9 @@ impl EventLoop {
             tokio::select! {
                 Some(event) = self.events_rx.recv() => {
                     match event {
-                        InputEvent::ClearTooltip(area_id) => {
-                            self.window_loop.window.clear_tooltip(area_id).map_err(ClearTooltip)?;
-                        }
-                        InputEvent::SetTooltip(area_id, message) => {
-                            self.window_loop.window.set_tooltip(area_id, &message).map_err(SetTooltip)?;
-                        }
-                        InputEvent::SetIcon(area_id, icon) => {
-                            if let Some(icon) = self.icons.get(icon.as_usize()) {
-                                self.window_loop.window.set_icon(area_id, icon).map_err(SetIcon)?;
-                            }
+                        InputEvent::ModifyArea(area_id, modify) => {
+                            let icon = modify.icon.and_then(|icon| self.icons.get(icon.as_usize()));
+                            self.window_loop.window.modify_notification(area_id, icon, modify.tooltip.as_deref()).map_err(ModifyNotification)?;
                         }
                         InputEvent::Notification(area_id, id, n) => {
                             if self.visible.is_some() {

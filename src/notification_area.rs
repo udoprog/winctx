@@ -1,4 +1,4 @@
-use crate::{Icon, PopupMenu};
+use crate::{ModifyArea, PopupMenu};
 
 /// A notification area.
 ///
@@ -7,7 +7,7 @@ use crate::{Icon, PopupMenu};
 #[derive(Default)]
 pub struct NotificationArea {
     pub(super) popup_menu: Option<PopupMenu>,
-    pub(super) initial_icon: Option<Icon>,
+    pub(super) initial: Option<ModifyArea>,
 }
 
 impl NotificationArea {
@@ -21,10 +21,10 @@ impl NotificationArea {
         Self::default()
     }
 
-    /// Set the default icon to use.
-    pub fn initial_icon(self, initial_icon: Icon) -> Self {
+    /// Set the initial state of the notification area.
+    pub fn initial(self, initial_icon: ModifyArea) -> Self {
         Self {
-            initial_icon: Some(initial_icon),
+            initial: Some(initial_icon),
             ..self
         }
     }

@@ -52,43 +52,25 @@ impl WindowHandle {
     }
 
     /// Clear out tooltip.
-    pub(crate) fn clear_tooltip(&self, area_id: AreaId) -> io::Result<()> {
+    pub(crate) fn modify_notification(
+        &self,
+        area_id: AreaId,
+        icon: Option<&IconHandle>,
+        tooltip: Option<&str>,
+    ) -> io::Result<()> {
         let mut nid = self.new_nid(area_id);
-        nid.uFlags = shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
-        copy_wstring_lossy(&mut nid.szTip, "");
 
-        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
-
-        if result == FALSE {
-            return Err(io::Error::last_os_error());
-        }
-
-        Ok(())
-    }
-
-    /// Set tooltip.
-    pub(crate) fn set_tooltip(&self, area_id: AreaId, tooltip: &str) -> io::Result<()> {
-        let mut nid = self.new_nid(area_id);
-        nid.uFlags = shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
-        copy_wstring_lossy(&mut nid.szTip, tooltip);
-
-        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
-
-        if result == FALSE {
-            return Err(io::Error::last_os_error());
-        }
-
-        Ok(())
-    }
-
-    /// Set context icon.
-    pub(crate) fn set_icon(&mut self, area_id: AreaId, icon: &IconHandle) -> io::Result<()> {
-        let result = unsafe {
-            let mut nid = self.new_nid(area_id);
-            nid.uFlags = shellapi::NIF_ICON;
+        if let Some(icon) = icon {
+            nid.uFlags |= shellapi::NIF_ICON;
             nid.hIcon = icon.hicon;
-            shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid)
-        };
+        }
+
+        if let Some(tooltip) = tooltip {
+            nid.uFlags |= shellapi::NIF_TIP | shellapi::NIF_SHOWTIP;
+            copy_wstring_lossy(&mut nid.szTip, tooltip);
+        }
+
+        let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
 
         if result == FALSE {
             return Err(io::Error::last_os_error());
