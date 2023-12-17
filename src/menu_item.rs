@@ -22,9 +22,9 @@ impl MenuItem {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{NotificationMenu, MenuItem};
+    /// use winctx::{PopupMenu, MenuItem};
     ///
-    /// let mut menu = NotificationMenu::new();
+    /// let mut menu = PopupMenu::new();
     /// menu.push(MenuItem::separator());
     /// ```
     pub fn separator() -> Self {
@@ -46,9 +46,9 @@ impl MenuItem {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::{NotificationMenu, MenuItem};
+    /// use winctx::{PopupMenu, MenuItem};
     ///
-    /// let mut menu = NotificationMenu::new();
+    /// let mut menu = PopupMenu::new();
     /// menu.push(MenuItem::entry("Example Application", true));
     /// menu.push(MenuItem::entry("Exit...", false));
     /// ```

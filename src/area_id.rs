@@ -1,9 +1,11 @@
-/// The identifier for a notification menu.
+/// The identifier for a [`NotificationArea`].
+///
+/// [`NotificationArea`]: crate::NotificationArea
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct MenuId(u32);
+pub struct AreaId(u32);
 
-impl MenuId {
+impl AreaId {
     /// Construct a new menu id.
     pub(crate) fn new(id: u32) -> Self {
         Self(id)

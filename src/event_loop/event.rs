@@ -1,4 +1,4 @@
-use crate::{Error, MenuId, Token};
+use crate::{AreaId, Error, Token};
 
 /// A clipbaord event.
 #[derive(Debug)]
@@ -15,11 +15,13 @@ pub enum ClipboardEvent {
 #[non_exhaustive]
 pub enum Event {
     /// The menu item identified by [`Token`] has been clicked.
-    MenuItemClicked(MenuId, Token),
+    MenuItemClicked(AreaId, Token),
+    /// An icon has been clicked.
+    IconClicked(AreaId),
     /// Indicates that the notification with the associated token has been clicked.
-    NotificationClicked(MenuId, Token),
+    NotificationClicked(AreaId, Token),
     /// The notification associated with the given token either timed out or was dismissed.
-    NotificationDismissed(MenuId, Token),
+    NotificationDismissed(AreaId, Token),
     /// The system clipboard has been modified.
     Clipboard(ClipboardEvent),
     /// Data was copied to the current process remotely using

@@ -22,7 +22,7 @@ use crate::error::ErrorKind::*;
 use crate::error::{Error, WindowError};
 use crate::event_loop::ClipboardEvent;
 use crate::window_loop::messages;
-use crate::MenuId;
+use crate::AreaId;
 use crate::Result;
 
 use super::{ClipboardManager, MenuHandle, MenuManager, WindowClassHandle, WindowHandle};
@@ -30,15 +30,17 @@ use super::{ClipboardManager, MenuHandle, MenuManager, WindowClassHandle, Window
 #[derive(Debug)]
 pub(crate) enum WindowEvent {
     /// A meny item was clicked.
-    MenuItemClicked(MenuId, u32),
+    MenuItemClicked(AreaId, u32),
     /// Shutdown was requested.
     Shutdown,
     /// Clipboard event.
     Clipboard(ClipboardEvent),
+    /// The notification icon has been clicked.
+    IconClicked(AreaId),
     /// Balloon was clicked.
-    NotificationClicked(MenuId),
+    NotificationClicked(AreaId),
     /// Balloon timed out.
-    NotificationDismissed(MenuId),
+    NotificationDismissed(AreaId),
     /// Data copied to this process.
     CopyData(usize, Vec<u8>),
     /// Non-fatal error.
@@ -174,7 +176,7 @@ impl WindowLoop {
         let mut hmenus = Vec::with_capacity(menus.len());
 
         for menu in &menus {
-            hmenus.push(menu.hmenu);
+            hmenus.push(menu.popup_menu.as_ref().map(|p| p.hmenu));
         }
 
         let thread = thread::spawn(move || unsafe {
@@ -303,7 +305,7 @@ impl WindowLoop {
 impl Drop for WindowLoop {
     fn drop(&mut self) {
         for menu in &self.menus {
-            _ = self.window.delete_notification(menu.menu_id);
+            _ = self.window.delete_notification(menu.area_id);
         }
     }
 }

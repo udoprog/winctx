@@ -48,7 +48,7 @@ const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> winctx::Result<()> {
-    let mut builder = WindowBuilder::new("Example Application");
+    let mut builder = WindowBuilder::new("se.tedro.Example");
     builder.set_icon(ICON, 22, 22);
 
     builder.push(MenuItem::entry("Hello World", true));
@@ -75,8 +75,8 @@ async fn main() -> winctx::Result<()> {
         };
 
         match event {
-            Event::MenuItemClicked(menu_id, token) => {
-                println!("Menu entry clicked: {menu_id:?}: {token:?}");
+            Event::MenuItemClicked(area_id, token) => {
+                println!("Menu entry clicked: {area_id:?}: {token:?}");
 
                 if token == notification {
                     sender.notification(

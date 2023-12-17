@@ -1,7 +1,7 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, MenuItem, Notification, NotificationMenu, WindowBuilder};
+use winctx::{Event, Icons, MenuItem, Notification, NotificationArea, PopupMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -10,7 +10,7 @@ async fn main() -> winctx::Result<()> {
     let mut icons = Icons::new();
     let initial_icon = icons.push_buffer(ICON, 22, 22);
 
-    let mut menu = NotificationMenu::new().initial_icon(initial_icon);
+    let mut menu = PopupMenu::new();
     menu.push(MenuItem::entry("Hello World", true));
     let single = menu.push(MenuItem::entry("Show notification", false));
     let multiple = menu.push(MenuItem::entry("Show multiple notifications", false));
@@ -22,11 +22,15 @@ async fn main() -> winctx::Result<()> {
         .window_name("Example Application")
         .icons(icons);
 
-    let menu_id = window.push_notification_menu(menu);
+    let area_id = window.push_notification_area(
+        NotificationArea::new()
+            .initial_icon(initial_icon)
+            .popup_menu(menu),
+    );
 
     let (sender, mut event_loop) = window.build().await?;
 
-    sender.set_tooltip(menu_id, "Hello!");
+    sender.set_tooltip(area_id, "Hello!");
     let mut has_tooltip = true;
 
     let mut ctrl_c = pin!(ctrl_c());
@@ -45,12 +49,15 @@ async fn main() -> winctx::Result<()> {
         };
 
         match event {
-            Event::MenuItemClicked(menu_id, token) => {
-                println!("Menu entry clicked: {menu_id:?}: {token:?}");
+            Event::IconClicked(area_id) => {
+                println!("Icon clicked: {area_id:?}");
+            }
+            Event::MenuItemClicked(area_id, token) => {
+                println!("Menu entry clicked: {area_id:?}: {token:?}");
 
                 if token == single {
                     sender.notification(
-                        menu_id,
+                        area_id,
                         Notification::new()
                             .title("This is a title")
                             .message("This is a body")
@@ -60,8 +67,8 @@ async fn main() -> winctx::Result<()> {
                 }
 
                 if token == multiple {
-                    sender.notification(menu_id, Notification::new().message("First"));
-                    sender.notification(menu_id, Notification::new().message("Second"));
+                    sender.notification(area_id, Notification::new().message("First"));
+                    sender.notification(area_id, Notification::new().message("Second"));
                     continue;
                 }
 
@@ -71,19 +78,19 @@ async fn main() -> winctx::Result<()> {
 
                 if token == tooltip {
                     if has_tooltip {
-                        sender.clear_tooltip(menu_id);
+                        sender.clear_tooltip(area_id);
                     } else {
-                        sender.set_tooltip(menu_id, "This is a tooltip!");
+                        sender.set_tooltip(area_id, "This is a tooltip!");
                     }
 
                     has_tooltip = !has_tooltip;
                 }
             }
-            Event::NotificationClicked(menu_id, token) => {
-                println!("Balloon clicked: {menu_id:?}: {token:?}");
+            Event::NotificationClicked(area_id, token) => {
+                println!("Balloon clicked: {area_id:?}: {token:?}");
             }
-            Event::NotificationDismissed(menu_id, token) => {
-                println!("Notification dismissed: {menu_id:?}: {token:?}");
+            Event::NotificationDismissed(area_id, token) => {
+                println!("Notification dismissed: {area_id:?}: {token:?}");
             }
             Event::CopyData(ty, bytes) => {
                 println!("Data of type {ty} copied to process: {:?}", bytes);

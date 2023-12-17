@@ -7,7 +7,7 @@ use windows_sys::Win32::UI::Shell as shellapi;
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 use windows_sys::Win32::UI::WindowsAndMessaging::{HMENU, MSG};
 
-use crate::MenuId;
+use crate::AreaId;
 
 use super::messages;
 use super::WindowEvent;
@@ -15,13 +15,13 @@ use super::WindowEvent;
 /// Helper to manager clipboard polling state.
 pub(super) struct MenuManager<'a> {
     events_tx: &'a UnboundedSender<WindowEvent>,
-    hmenus: &'a [winuser::HMENU],
+    hmenus: &'a [Option<winuser::HMENU>],
 }
 
 impl<'a> MenuManager<'a> {
     pub(super) fn new(
         events_tx: &'a UnboundedSender<WindowEvent>,
-        hmenus: &'a [winuser::HMENU],
+        hmenus: &'a [Option<winuser::HMENU>],
     ) -> Self {
         Self { events_tx, hmenus }
     }
@@ -29,25 +29,27 @@ impl<'a> MenuManager<'a> {
     pub(super) unsafe fn dispatch(&mut self, msg: &MSG) -> bool {
         match msg.message {
             messages::ICON_ID => {
-                let menu_id = MenuId::new(msg.wParam as u32);
+                let area_id = AreaId::new(msg.wParam as u32);
 
                 match msg.lParam as u32 {
                     // Balloon clicked.
                     shellapi::NIN_BALLOONUSERCLICK => {
                         _ = self
                             .events_tx
-                            .send(WindowEvent::NotificationClicked(menu_id));
+                            .send(WindowEvent::NotificationClicked(area_id));
                         return true;
                     }
                     // Balloon timed out.
                     shellapi::NIN_BALLOONTIMEOUT => {
                         _ = self
                             .events_tx
-                            .send(WindowEvent::NotificationDismissed(menu_id));
+                            .send(WindowEvent::NotificationDismissed(area_id));
                         return true;
                     }
                     winuser::WM_LBUTTONUP | winuser::WM_RBUTTONUP => {
-                        let Some(&hmenu) = self.hmenus.get(menu_id.id() as usize) else {
+                        _ = self.events_tx.send(WindowEvent::IconClicked(area_id));
+
+                        let Some(Some(hmenu)) = self.hmenus.get(area_id.id() as usize) else {
                             return true;
                         };
 
@@ -62,7 +64,7 @@ impl<'a> MenuManager<'a> {
                         winuser::SetForegroundWindow(msg.hwnd);
 
                         winuser::TrackPopupMenu(
-                            hmenu,
+                            *hmenu,
                             0,
                             p.x,
                             p.y,
@@ -79,12 +81,12 @@ impl<'a> MenuManager<'a> {
             winuser::WM_MENUCOMMAND => {
                 let hmenu = msg.lParam as HMENU;
 
-                let Some(menu_id) = self.hmenus.iter().position(|h| *h == hmenu) else {
+                let Some(area_id) = self.hmenus.iter().position(|h| *h == Some(hmenu)) else {
                     return true;
                 };
 
                 _ = self.events_tx.send(WindowEvent::MenuItemClicked(
-                    MenuId::new(menu_id as u32),
+                    AreaId::new(area_id as u32),
                     msg.wParam as u32,
                 ));
 

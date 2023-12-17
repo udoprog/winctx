@@ -20,3 +20,6 @@ mod window_class_handle;
 
 pub(super) use self::menu_handle::MenuHandle;
 mod menu_handle;
+
+pub(super) use self::popup_menu_handle::PopupMenuHandle;
+mod popup_menu_handle;

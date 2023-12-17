@@ -39,7 +39,7 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, MenuItem, Notification, Icons, NotificationMenu, WindowBuilder};
+//! use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, NotificationArea, WindowBuilder};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
@@ -48,8 +48,7 @@
 //! let mut icons = Icons::new();
 //! let initial_icon = icons.push_buffer(ICON, 22, 22);
 //!
-//! let mut menu = NotificationMenu::new()
-//!     .initial_icon(initial_icon);
+//! let mut menu = PopupMenu::new();
 //!
 //! menu.push(MenuItem::entry("Hello World", true));
 //! let single = menu.push(MenuItem::entry("Show notification", false));
@@ -61,7 +60,11 @@
 //!     .window_name("Example Application")
 //!     .icons(icons);
 //!
-//! let menu_id = window.push_notification_menu(menu);
+//! let area_id = window.push_notification_area(
+//!     NotificationArea::new()
+//!         .initial_icon(initial_icon)
+//!         .popup_menu(menu)
+//! );
 //!
 //! let (sender, mut event_loop) = window
 //!     .build()
@@ -83,12 +86,12 @@
 //!     };
 //!
 //!     match event {
-//!         Event::MenuItemClicked(menu_id, token) => {
-//!             println!("Menu entry clicked: {menu_id:?}: {token:?}");
+//!         Event::MenuItemClicked(area_id, token) => {
+//!             println!("Menu entry clicked: {area_id:?}: {token:?}");
 //!
 //!             if token == single {
 //!                 sender.notification(
-//!                     menu_id,
+//!                     area_id,
 //!                     Notification::new()
 //!                         .title("This is a title")
 //!                         .message("This is a body")
@@ -98,8 +101,8 @@
 //!             }
 //!
 //!             if token == multiple {
-//!                 sender.notification(menu_id, Notification::new().message("First"));
-//!                 sender.notification(menu_id, Notification::new().message("Second"));
+//!                 sender.notification(area_id, Notification::new().message("First"));
+//!                 sender.notification(area_id, Notification::new().message("Second"));
 //!                 continue;
 //!             }
 //!
@@ -107,11 +110,11 @@
 //!                 sender.shutdown();
 //!             }
 //!         }
-//!         Event::NotificationClicked(menu_id, token) => {
-//!             println!("Balloon clicked: {menu_id:?}: {token:?}");
+//!         Event::NotificationClicked(area_id, token) => {
+//!             println!("Balloon clicked: {area_id:?}: {token:?}");
 //!         }
-//!         Event::NotificationDismissed(menu_id, token) => {
-//!             println!("Notification dismissed: {menu_id:?}: {token:?}");
+//!         Event::NotificationDismissed(area_id, token) => {
+//!             println!("Notification dismissed: {area_id:?}: {token:?}");
 //!         }
 //!         Event::CopyData(ty, bytes) => {
 //!             println!("Data of type {ty} copied to process: {:?}", bytes);
@@ -165,8 +168,8 @@ pub use self::token::Token;
 mod token;
 
 #[doc(inline)]
-pub use self::menu_id::MenuId;
-mod menu_id;
+pub use self::area_id::AreaId;
+mod area_id;
 
 #[doc(inline)]
 pub use self::event_loop::{ClipboardEvent, Event, EventLoop, Sender};
@@ -176,12 +179,19 @@ mod event_loop;
 pub use self::window_builder::WindowBuilder;
 mod window_builder;
 
+#[doc(inline)]
 pub use self::icons::Icons;
 mod icons;
 
-pub use self::notification_menu::NotificationMenu;
-mod notification_menu;
+#[doc(inline)]
+pub use self::notification_area::NotificationArea;
+mod notification_area;
 
+#[doc(inline)]
+pub use self::popup_menu::PopupMenu;
+mod popup_menu;
+
+#[doc(inline)]
 pub use self::icon_buffer::IconBuffer;
 mod icon_buffer;
 
@@ -199,6 +209,7 @@ mod named_mutex;
 pub use self::menu_item::MenuItem;
 pub(crate) mod menu_item;
 
+#[doc(inline)]
 pub use self::icon::Icon;
 mod icon;
 

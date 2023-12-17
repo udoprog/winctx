@@ -5,15 +5,15 @@ use tokio::sync::mpsc;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
-use crate::{Icon, MenuId, Notification, Token};
+use crate::{AreaId, Icon, Notification, Token};
 
 #[derive(Debug)]
 pub(crate) enum InputEvent {
     Shutdown,
-    ClearTooltip(MenuId),
-    SetTooltip(MenuId, String),
-    SetIcon(MenuId, Icon),
-    Notification(MenuId, u32, Notification),
+    ClearTooltip(AreaId),
+    SetTooltip(AreaId, String),
+    SetIcon(AreaId, Icon),
+    Notification(AreaId, u32, Notification),
 }
 
 struct Inner {
@@ -38,33 +38,33 @@ impl Sender {
     }
 
     /// Set the icon of the context menu.
-    pub fn set_icon(&self, menu_id: MenuId, icon: Icon) {
-        _ = self.inner.tx.send(InputEvent::SetIcon(menu_id, icon));
+    pub fn set_icon(&self, area_id: AreaId, icon: Icon) {
+        _ = self.inner.tx.send(InputEvent::SetIcon(area_id, icon));
     }
 
     /// Clear the tooltip of the context menu.
-    pub fn clear_tooltip(&self, menu_id: MenuId) {
-        _ = self.inner.tx.send(InputEvent::ClearTooltip(menu_id));
+    pub fn clear_tooltip(&self, area_id: AreaId) {
+        _ = self.inner.tx.send(InputEvent::ClearTooltip(area_id));
     }
 
     /// Set the tooltip of the context menu.
-    pub fn set_tooltip<E>(&self, menu_id: MenuId, message: E)
+    pub fn set_tooltip<E>(&self, area_id: AreaId, message: E)
     where
         E: fmt::Display,
     {
         _ = self
             .inner
             .tx
-            .send(InputEvent::SetTooltip(menu_id, message.to_string()));
+            .send(InputEvent::SetTooltip(area_id, message.to_string()));
     }
 
     /// Send the given notification.
-    pub fn notification(&self, menu_id: MenuId, n: Notification) -> Token {
+    pub fn notification(&self, area_id: AreaId, n: Notification) -> Token {
         let id = self
             .inner
             .notifications
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        _ = self.inner.tx.send(InputEvent::Notification(menu_id, id, n));
+        _ = self.inner.tx.send(InputEvent::Notification(area_id, id, n));
         Token::new(id)
     }
 

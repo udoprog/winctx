@@ -6,14 +6,16 @@ use tokio::sync::mpsc;
 use crate::error::ErrorKind::*;
 use crate::error::{SetupIconsError, SetupMenuError};
 use crate::menu_item::MenuItemKind;
+use crate::window_loop::PopupMenuHandle;
 use crate::window_loop::{IconHandle, MenuHandle, WindowLoop};
-use crate::{EventLoop, Icons, MenuId, NotificationMenu, Result, Sender};
+use crate::PopupMenu;
+use crate::{AreaId, EventLoop, Icons, NotificationArea, Result, Sender};
 
 /// The builder of a window context.
 pub struct WindowBuilder {
     class_name: OsString,
     window_name: Option<OsString>,
-    notification_menus: Vec<NotificationMenu>,
+    areas: Vec<NotificationArea>,
     clipboard_events: bool,
     icons: Icons,
 }
@@ -27,7 +29,7 @@ impl WindowBuilder {
     /// ```
     /// use winctx::WindowBuilder;
     ///
-    /// let mut builder = WindowBuilder::new("Example Application");
+    /// let mut builder = WindowBuilder::new("se.tedro.Example");
     /// ```
     pub fn new<N>(class_name: N) -> Self
     where
@@ -36,7 +38,7 @@ impl WindowBuilder {
         Self {
             class_name: class_name.as_ref().to_owned(),
             window_name: None,
-            notification_menus: Vec::new(),
+            areas: Vec::new(),
             clipboard_events: false,
             icons: Icons::default(),
         }
@@ -49,7 +51,7 @@ impl WindowBuilder {
     /// ```
     /// use winctx::WindowBuilder;
     ///
-    /// let mut builder = WindowBuilder::new("Example Application")
+    /// let mut builder = WindowBuilder::new("se.tedro.Example")
     ///     .clipboard_events(true);
     /// ```
     pub fn clipboard_events(self, clipboard_events: bool) -> Self {
@@ -79,14 +81,35 @@ impl WindowBuilder {
         }
     }
 
-    /// Push a notification menu associated with the current application.
-    pub fn push_notification_menu(&mut self, notification_menu: NotificationMenu) -> MenuId {
-        let id = MenuId::new(self.notification_menus.len() as u32);
-        self.notification_menus.push(notification_menu);
+    /// Push a notification area onto the window and return its id.
+    pub fn push_notification_area(&mut self, area: NotificationArea) -> AreaId {
+        let id = AreaId::new(self.areas.len() as u32);
+        self.areas.push(area);
         id
     }
 
     /// Associate custom icons with the window.
+    ///
+    /// If [`Icon`] handles are used their associated icons lexicon has to be
+    /// installed here.
+    ///
+    /// [`Icon`]: crate::Icon
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::{Icons, NotificationArea, WindowBuilder};
+    ///
+    /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
+    /// const ICON: &[u8] = include_bytes!("tokio.ico");
+    ///
+    /// let mut icons = Icons::new();
+    /// let default_icon = icons.push_buffer(ICON, 22, 22);
+    /// let area = NotificationArea::new().initial_icon(default_icon);
+    ///
+    /// let mut builder = WindowBuilder::new("se.tedro.Example")
+    ///     .icons(icons);
+    /// ```
     pub fn icons(self, icons: Icons) -> Self {
         Self { icons, ..self }
     }
@@ -96,13 +119,21 @@ impl WindowBuilder {
         let (events_tx, events_rx) = mpsc::unbounded_channel();
 
         let icons = self.setup_icons(&self.icons).map_err(SetupIcons)?;
-        let mut menus = Vec::with_capacity(self.notification_menus.len());
+        let mut menus = Vec::with_capacity(self.areas.len());
 
-        for (id, m) in self.notification_menus.iter().enumerate() {
+        for (id, m) in self.areas.iter().enumerate() {
+            let area_id = AreaId::new(id as u32);
+
+            let popup_menu = if let Some(popup_menu) = &m.popup_menu {
+                let mut menu = PopupMenuHandle::new().map_err(BuildPopupMenu)?;
+                build_menu(&mut menu, popup_menu).map_err(SetupMenu)?;
+                Some(menu)
+            } else {
+                None
+            };
+
             let initial_icon = m.initial_icon.map(|i| i.as_usize());
-            let menu = MenuHandle::new(MenuId::new(id as u32), initial_icon).map_err(BuildMenu)?;
-            self.build_menu(&menu, m).map_err(SetupMenu)?;
-            menus.push(menu);
+            menus.push(MenuHandle::new(area_id, popup_menu, initial_icon));
         }
 
         let mut window = WindowLoop::new(
@@ -117,13 +148,13 @@ impl WindowBuilder {
         for menu in &window.menus {
             window
                 .window
-                .add_notification(menu.menu_id)
+                .add_notification(menu.area_id)
                 .map_err(AddIcon)?;
 
             if let Some(icon) = menu.initial_icon {
                 window
                     .window
-                    .set_icon(menu.menu_id, &icons[icon])
+                    .set_icon(menu.area_id, &icons[icon])
                     .map_err(SetIcon)?;
             }
         }
@@ -145,27 +176,23 @@ impl WindowBuilder {
 
         Ok(handles)
     }
+}
 
-    fn build_menu(
-        &self,
-        menu: &MenuHandle,
-        notification_menu: &NotificationMenu,
-    ) -> Result<(), SetupMenuError> {
-        for (index, item) in notification_menu.menu.iter().enumerate() {
-            debug_assert!(u32::try_from(index).is_ok());
+fn build_menu(menu: &mut PopupMenuHandle, popup_menu: &PopupMenu) -> Result<(), SetupMenuError> {
+    for (index, item) in popup_menu.menu.iter().enumerate() {
+        debug_assert!(u32::try_from(index).is_ok());
 
-            match &item.kind {
-                MenuItemKind::Separator => {
-                    menu.add_menu_separator(index as u32)
-                        .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
-                }
-                MenuItemKind::MenyEntry { text, default } => {
-                    menu.add_menu_entry(index as u32, text.as_str(), *default)
-                        .map_err(|e| SetupMenuError::AddMenuEntry(index, e))?;
-                }
+        match &item.kind {
+            MenuItemKind::Separator => {
+                menu.add_menu_separator(index as u32)
+                    .map_err(|e| SetupMenuError::AddMenuSeparator(index, e))?;
+            }
+            MenuItemKind::MenyEntry { text, default } => {
+                menu.add_menu_entry(index as u32, text.as_str(), *default)
+                    .map_err(|e| SetupMenuError::AddMenuEntry(index, e))?;
             }
         }
-
-        Ok(())
     }
+
+    Ok(())
 }
