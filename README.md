@@ -7,6 +7,8 @@
 
 A minimal window context for Rust.
 
+![The showcase popup menu](https://github.com/udoprog/winctx/blob/main/graphics/showcase.png?raw=true)
+
 In order to do most productive things in a Windows desktop environment, you
 need to construct and interact with a window. Constructing this window
 allows for processing messages which fill a wide range of functions.
