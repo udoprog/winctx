@@ -3,7 +3,7 @@ use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, ModifyArea, NotificationArea, WindowBuilder};
+use winctx::{Area, Event, Icons, ModifyArea, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -12,13 +12,13 @@ async fn main() -> Result<()> {
     let mut icons = Icons::new();
     let default_icon = icons.push_buffer(ICON, 22, 22);
 
-    let area = NotificationArea::new().initial(ModifyArea::new().icon(default_icon));
+    let area = Area::new().initial(ModifyArea::new().icon(default_icon));
 
     let mut builder = WindowBuilder::new("se.tedro.Example")
         .icons(icons)
         .clipboard_events(true);
 
-    builder.push_notification_area(area);
+    builder.push_area(area);
 
     let (sender, mut event_loop) = builder.build().await?;
 

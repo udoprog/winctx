@@ -39,7 +39,7 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, NotificationArea, WindowBuilder, ModifyArea};
+//! use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, Area, WindowBuilder, ModifyArea};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
@@ -59,8 +59,8 @@
 //!     .window_name("Example Application")
 //!     .icons(icons);
 //!
-//! let area_id = window.push_notification_area(
-//!     NotificationArea::new()
+//! let area_id = window.push_area(
+//!     Area::new()
 //!         .initial(ModifyArea::new().icon(initial_icon))
 //!         .popup_menu(menu)
 //! );
@@ -161,8 +161,8 @@ pub use self::icons::Icons;
 mod icons;
 
 #[doc(inline)]
-pub use self::notification_area::NotificationArea;
-mod notification_area;
+pub use self::area::Area;
+mod area;
 
 #[doc(inline)]
 pub use self::popup_menu::PopupMenu;

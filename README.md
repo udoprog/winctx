@@ -42,74 +42,63 @@ The basic loop looks like this:
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, Notification, WindowBuilder, MenuItem};
+use winctx::{Event, MenuItem, Notification, Icons, PopupMenu, Area, WindowBuilder, ModifyArea};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
-#[tokio::main]
-async fn main() -> winctx::Result<()> {
-    let mut builder = WindowBuilder::new("se.tedro.Example");
-    builder.set_icon(ICON, 22, 22);
+let mut icons = Icons::new();
+let initial_icon = icons.push_buffer(ICON, 22, 22);
 
-    builder.push(MenuItem::entry("Hello World", true));
-    let notification = builder.push(MenuItem::entry("Show notification", false));
-    let notification_multiple = builder.push(MenuItem::entry("Show multiple notifications", false));
-    builder.push(MenuItem::separator());
-    let quit = builder.push(MenuItem::entry("Quit", false));
+let mut menu = PopupMenu::new();
 
-    let (sender, mut event_loop) = builder.build().await?;
+let first = menu.push(MenuItem::entry("Example Application"));
+menu.push(MenuItem::separator());
+let quit = menu.push(MenuItem::entry("Quit"));
+menu.set_default(first);
 
-    let mut ctrl_c = pin!(ctrl_c());
-    let mut shutdown = false;
+let mut window = WindowBuilder::new("se.tedro.Example")
+    .window_name("Example Application")
+    .icons(icons);
 
-    loop {
-        let event = tokio::select! {
-            _ = ctrl_c.as_mut(), if !shutdown => {
-                sender.shutdown();
-                shutdown = true;
-                continue;
-            }
-            event = event_loop.tick() => {
-                event?
-            }
-        };
+let area_id = window.push_area(
+    Area::new()
+        .initial(ModifyArea::new().icon(initial_icon))
+        .popup_menu(menu)
+);
 
-        match event {
-            Event::MenuItemClicked(area_id, token) => {
-                println!("Menu entry clicked: {area_id:?}: {token:?}");
+let (sender, mut event_loop) = window
+    .build()
+    .await?;
 
-                if token == notification {
-                    sender.notification(
-                        Notification::new("This is a body").title("This is a title"),
-                    );
-                    continue;
-                }
+let mut ctrl_c = pin!(ctrl_c());
+let mut shutdown = false;
 
-                if token == notification_multiple {
-                    sender.notification(Notification::new("First"));
-                    sender.notification(Notification::new("Second"));
-                    continue;
-                }
-
-                if token == quit {
-                    sender.shutdown();
-                }
-            }
-            Event::NotificationClicked(token) => {
-                println!("Balloon clicked: {:?}", token);
-            }
-            Event::NotificationDismissed(token) => {
-                println!("Notification dismissed: {:?}", token);
-            }
-            Event::Shutdown => {
-                println!("Window shut down");
-                break;
-            }
-            _ => {}
+loop {
+    let event = tokio::select! {
+        _ = ctrl_c.as_mut(), if !shutdown => {
+            sender.shutdown();
+            shutdown = true;
+            continue;
         }
-    }
+        event = event_loop.tick() => {
+            event?
+        }
+    };
 
-    Ok(())
+    match event {
+        Event::MenuItemClicked(area_id, token) => {
+            println!("Menu entry clicked: {area_id:?}: {token:?}");
+
+            if token == quit {
+                sender.shutdown();
+            }
+        }
+        Event::Shutdown => {
+            println!("Window shut down");
+            break;
+        }
+        _ => {}
+    }
 }
 ```
 

@@ -10,13 +10,13 @@ use crate::window_loop::PopupMenuHandle;
 use crate::window_loop::{AreaHandle, IconHandle, WindowLoop};
 use crate::MenuItemId;
 use crate::PopupMenu;
-use crate::{AreaId, EventLoop, Icons, NotificationArea, Result, Sender};
+use crate::{Area, AreaId, EventLoop, Icons, Result, Sender};
 
 /// The builder of a window context.
 pub struct WindowBuilder {
     class_name: OsString,
     window_name: Option<OsString>,
-    areas: Vec<NotificationArea>,
+    areas: Vec<Area>,
     clipboard_events: bool,
     icons: Icons,
 }
@@ -83,7 +83,23 @@ impl WindowBuilder {
     }
 
     /// Push a notification area onto the window and return its id.
-    pub fn push_notification_area(&mut self, area: NotificationArea) -> AreaId {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use winctx::{Area, Icons, WindowBuilder, ModifyArea};
+    ///
+    /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
+    /// const ICON: &[u8] = include_bytes!("tokio.ico");
+    ///
+    /// let mut icons = Icons::new();
+    /// let icon = icons.push_buffer(ICON, 22, 22);
+    ///
+    /// let mut builder = WindowBuilder::new("se.tedro.Example").icons(icons);
+    /// let area = Area::new().initial(ModifyArea::new().icon(icon));
+    /// let area_id = builder.push_area(area);
+    /// ```
+    pub fn push_area(&mut self, area: Area) -> AreaId {
         let id = AreaId::new(self.areas.len() as u32);
         self.areas.push(area);
         id
@@ -99,14 +115,14 @@ impl WindowBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::{Icons, NotificationArea, WindowBuilder, ModifyArea};
+    /// use winctx::{Icons, Area, WindowBuilder, ModifyArea};
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
     ///
     /// let mut icons = Icons::new();
     /// let default_icon = icons.push_buffer(ICON, 22, 22);
-    /// let area = NotificationArea::new()
+    /// let area = Area::new()
     ///     .initial(ModifyArea::new().icon(default_icon));
     ///
     /// let mut builder = WindowBuilder::new("se.tedro.Example")

@@ -2,7 +2,7 @@ use std::pin::pin;
 
 use tokio::signal::ctrl_c;
 use winctx::{
-    Event, Icons, MenuItem, ModifyArea, ModifyMenuItem, Notification, NotificationArea, PopupMenu,
+    Area, Event, Icons, MenuItem, ModifyArea, ModifyMenuItem, Notification, PopupMenu,
     WindowBuilder,
 };
 
@@ -38,8 +38,8 @@ async fn main() -> winctx::Result<()> {
         .window_name("Example Application")
         .icons(icons);
 
-    window.push_notification_area(
-        NotificationArea::new()
+    window.push_area(
+        Area::new()
             .initial(
                 ModifyArea::new()
                     .icon(initial_icon)

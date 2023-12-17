@@ -5,12 +5,12 @@ use crate::{ModifyArea, PopupMenu};
 /// This is opened when you click on the window icon that lives in the system
 /// tray.
 #[derive(Default)]
-pub struct NotificationArea {
+pub struct Area {
     pub(super) popup_menu: Option<PopupMenu>,
     pub(super) initial: Option<ModifyArea>,
 }
 
-impl NotificationArea {
+impl Area {
     /// Construct a new empty notification area.
     ///
     /// Without any configuration this will just occupy a blank space in the

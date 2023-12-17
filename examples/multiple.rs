@@ -2,7 +2,7 @@ use std::pin::pin;
 
 use anyhow::Result;
 use tokio::signal::ctrl_c;
-use winctx::{Event, Icons, MenuItem, ModifyArea, NotificationArea, PopupMenu, WindowBuilder};
+use winctx::{Area, Event, Icons, MenuItem, ModifyArea, PopupMenu, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -23,14 +23,14 @@ async fn main() -> Result<()> {
         .icons(icons)
         .clipboard_events(true);
 
-    let menu1 = builder.push_notification_area(
-        NotificationArea::new()
+    let menu1 = builder.push_area(
+        Area::new()
             .initial(ModifyArea::new().icon(default_icon))
             .popup_menu(menu1),
     );
 
-    let menu2 = builder.push_notification_area(
-        NotificationArea::new()
+    let menu2 = builder.push_area(
+        Area::new()
             .initial(ModifyArea::new().icon(default_icon))
             .popup_menu(menu2),
     );
@@ -56,8 +56,8 @@ async fn main() -> Result<()> {
             Event::IconClicked(area_id) => {
                 println!("Icon clicked: {area_id:?}");
             }
-            Event::MenuItemClicked(area_id, token) => {
-                println!("Menu entry clicked: {area_id:?}: {token:?}");
+            Event::MenuItemClicked(area_id, item_id) => {
+                println!("Menu entry clicked: {area_id:?}: {item_id:?}");
 
                 if area_id == menu1 {
                     println!("Menu 1 clicked");

@@ -1,6 +1,6 @@
-/// The identifier for a [`NotificationArea`].
+/// The identifier for a [`Area`].
 ///
-/// [`NotificationArea`]: crate::NotificationArea
+/// [`Area`]: crate::Area
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct AreaId(u32);
