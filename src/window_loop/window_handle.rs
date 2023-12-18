@@ -2,7 +2,7 @@ use std::io;
 use std::mem::{size_of, MaybeUninit};
 
 use windows_sys::Win32::Foundation::{FALSE, HWND};
-use windows_sys::Win32::UI::Shell as shellapi;
+use windows_sys::Win32::UI::Shell::{self as shellapi, SHGetStockIconInfo};
 
 use crate::convert::copy_wstring_lossy;
 use crate::notification::NotificationIcon;
@@ -81,17 +81,6 @@ impl WindowHandle {
 
     /// Send a notification.
     pub(crate) fn send_notification(&self, area_id: AreaId, n: Notification) -> io::Result<()> {
-        /// Convert into a flag.
-        fn into_flags(options: u32, icon: NotificationIcon) -> u32 {
-            let icon = match icon {
-                NotificationIcon::Info => shellapi::NIIF_INFO,
-                NotificationIcon::Error => shellapi::NIIF_ERROR,
-                NotificationIcon::Warning => shellapi::NIIF_WARNING,
-            };
-
-            options | icon
-        }
-
         let mut nid = self.new_nid(area_id);
         nid.uFlags = shellapi::NIF_INFO;
 
@@ -107,7 +96,38 @@ impl WindowHandle {
             nid.Anonymous.uTimeout = timeout.as_millis() as u32;
         }
 
-        nid.dwInfoFlags = into_flags(n.options, n.icon);
+        nid.dwInfoFlags = n.options;
+
+        if let Some(icon) = n.icon {
+            match icon {
+                NotificationIcon::Info => {
+                    nid.dwInfoFlags |= shellapi::NIIF_INFO;
+                }
+                NotificationIcon::Warning => {
+                    nid.dwInfoFlags |= shellapi::NIIF_WARNING;
+                }
+                NotificationIcon::Error => {
+                    nid.dwInfoFlags |= shellapi::NIIF_ERROR;
+                }
+                NotificationIcon::StockIcon(stock) => unsafe {
+                    let mut sii: shellapi::SHSTOCKICONINFO = MaybeUninit::zeroed().assume_init();
+                    sii.cbSize = size_of::<shellapi::SHSTOCKICONINFO>() as u32;
+
+                    let mut opts = shellapi::SHGSI_ICON | n.stock_icon_opts;
+
+                    if nid.dwInfoFlags & shellapi::NIIF_LARGE_ICON != 0 {
+                        opts |= shellapi::SHGSI_LARGEICON;
+                    } else {
+                        opts |= shellapi::SHGSI_SMALLICON;
+                    }
+
+                    if SHGetStockIconInfo(stock.as_id(), opts, &mut sii) == 0 {
+                        nid.hBalloonIcon = sii.hIcon;
+                        nid.dwInfoFlags |= shellapi::NIIF_USER;
+                    }
+                },
+            };
+        }
 
         let result = unsafe { shellapi::Shell_NotifyIconW(shellapi::NIM_MODIFY, &nid) };
 

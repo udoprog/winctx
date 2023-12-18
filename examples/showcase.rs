@@ -1,6 +1,7 @@
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
+use winctx::icon::StockIcon;
 use winctx::{Event, Icons, WindowBuilder};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
@@ -76,6 +77,8 @@ async fn main() -> winctx::Result<()> {
                             .title("This is a title")
                             .message("This is a body")
                             .large_icon()
+                            .stock_icon(StockIcon::AUDIOFILES)
+                            .icon_link_overlay()
                             .send();
                     }
                     winctx::item_id!(0, 2) => {

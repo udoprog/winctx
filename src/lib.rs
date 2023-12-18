@@ -140,7 +140,7 @@ mod window_loop;
 
 #[doc(inline)]
 use self::notification::Notification;
-pub mod notification;
+mod notification;
 
 #[doc(inline)]
 pub use self::error::Error;
@@ -202,7 +202,7 @@ pub(crate) mod menu_item;
 
 #[doc(inline)]
 pub use self::icon::Icon;
-mod icon;
+pub mod icon;
 
 #[doc(inline)]
 use self::modify_area::ModifyArea;

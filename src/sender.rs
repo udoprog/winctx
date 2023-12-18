@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc;
 
+use crate::icon::StockIcon;
 use crate::notification::NotificationIcon;
 use crate::{AreaId, Icon, ItemId, ModifyArea, ModifyMenuItem, Notification, NotificationId};
 
@@ -216,7 +217,37 @@ impl NotificationBuilder<'_> {
         self
     }
 
-    /// Set the notification icon.
+    /// Set the notification to be an info notification.
+    ///
+    /// This is an alias for [`NotificationBuilder::icon`] with
+    /// [`NotificationIcon::Info`] as an argument.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    ///
+    /// # async fn test() -> winctx::Result<()> {
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area().id();
+    ///
+    /// let (mut sender, _) = window.build().await?;
+    ///
+    /// let id = sender.notification(area)
+    ///     .info()
+    ///     .message("Something normal")
+    ///     .send();
+    /// # Ok(()) }
+    /// ```
+    pub fn info(mut self) -> Self {
+        self.notification.icon(NotificationIcon::Info);
+        self
+    }
+
+    /// Set the notification to be a warning notification.
+    ///
+    /// This is an alias for [`NotificationBuilder::icon`] with
+    /// [`NotificationIcon::Warning`] as an argument.
     ///
     /// # Examples
     ///
@@ -231,37 +262,66 @@ impl NotificationBuilder<'_> {
     ///
     /// let id = sender.notification(area)
     ///     .warning()
-    ///     .message("Something dangerous")
+    ///     .message("Something strange")
     ///     .send();
     /// # Ok(()) }
     /// ```
-    pub fn icon(mut self, icon: NotificationIcon) -> Self {
-        self.notification.icon(icon);
+    pub fn warning(mut self) -> Self {
+        self.notification.icon(NotificationIcon::Warning);
         self
-    }
-
-    /// Set the notification to be an info notification.
-    ///
-    /// This is an alias for [`NotificationBuilder::icon`] with
-    /// [`NotificationIcon::Info`] as an argument.
-    pub fn info(self) -> Self {
-        self.icon(NotificationIcon::Info)
-    }
-
-    /// Set the notification to be a warning notification.
-    ///
-    /// This is an alias for [`NotificationBuilder::icon`] with
-    /// [`NotificationIcon::Warning`] as an argument.
-    pub fn warning(self) -> Self {
-        self.icon(NotificationIcon::Warning)
     }
 
     /// Set the notification to be an error notification.
     ///
     /// This is an alias for [`NotificationBuilder::icon`] with
     /// [`NotificationIcon::Error`] as an argument.
-    pub fn error(self) -> Self {
-        self.icon(NotificationIcon::Error)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    ///
+    /// # async fn test() -> winctx::Result<()> {
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area().id();
+    ///
+    /// let (mut sender, _) = window.build().await?;
+    ///
+    /// let id = sender.notification(area)
+    ///     .error()
+    ///     .message("Something broken")
+    ///     .send();
+    /// # Ok(()) }
+    /// ```
+    pub fn error(mut self) -> Self {
+        self.notification.icon(NotificationIcon::Error);
+        self
+    }
+
+    /// Set a stock icon for the notification.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    /// use winctx::icon::StockIcon;
+    ///
+    /// # async fn test() -> winctx::Result<()> {
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area().id();
+    ///
+    /// let (mut sender, _) = window.build().await?;
+    ///
+    /// let id = sender.notification(area)
+    ///     .error()
+    ///     .message("Something broken")
+    ///     .send();
+    /// # Ok(()) }
+    /// ```
+    pub fn stock_icon(mut self, stock_icon: StockIcon) -> Self {
+        self.notification
+            .icon(NotificationIcon::StockIcon(stock_icon));
+        self
     }
 
     /// Do not play the sound associated with a notification.
@@ -314,6 +374,66 @@ impl NotificationBuilder<'_> {
     /// ```
     pub fn large_icon(mut self) -> Self {
         self.notification.large_icon();
+        self
+    }
+
+    /// Indicates that the icon should be highlighted for selection.
+    ///
+    /// Note that this only has an effect on certain icons:
+    /// * Stock icons specified with [`NotificationBuilder::stock_icon`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    /// use winctx::icon::StockIcon;
+    ///
+    /// # async fn test() -> winctx::Result<()> {
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area().id();
+    ///
+    /// let (mut sender, _) = window.build().await?;
+    ///
+    /// let id = sender.notification(area)
+    ///     .warning()
+    ///     .message("Something dangerous")
+    ///     .stock_icon(StockIcon::FOLDER)
+    ///     .icon_selected()
+    ///     .send();
+    /// # Ok(()) }
+    /// ```
+    pub fn icon_selected(mut self) -> Self {
+        self.notification.icon_selected();
+        self
+    }
+
+    /// Indicates that the icon should have the link overlay.
+    ///
+    /// Note that this only has an effect on certain icons:
+    /// * Stock icons specified with [`NotificationBuilder::stock_icon`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use winctx::WindowBuilder;
+    /// use winctx::icon::StockIcon;
+    ///
+    /// # async fn test() -> winctx::Result<()> {
+    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let area = window.new_area().id();
+    ///
+    /// let (mut sender, _) = window.build().await?;
+    ///
+    /// let id = sender.notification(area)
+    ///     .warning()
+    ///     .message("Something dangerous")
+    ///     .stock_icon(StockIcon::FOLDER)
+    ///     .icon_link_overlay()
+    ///     .send();
+    /// # Ok(()) }
+    /// ```
+    pub fn icon_link_overlay(mut self) -> Self {
+        self.notification.icon_link_overlay();
         self
     }
 
