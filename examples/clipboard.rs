@@ -4,13 +4,13 @@ use std::pin::pin;
 use anyhow::Result;
 use tokio::signal::ctrl_c;
 use winctx::event::ClipboardEvent;
-use winctx::{Event, WindowBuilder};
+use winctx::{CreateWindow, Event};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut window = WindowBuilder::new("se.tedro.Example").clipboard_events(true);
+    let mut window = CreateWindow::new("se.tedro.Example").clipboard_events(true);
 
     let default_icon = window.icons().insert_buffer(ICON, 22, 22);
 

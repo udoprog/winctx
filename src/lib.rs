@@ -52,13 +52,13 @@
 //! use std::pin::pin;
 //!
 //! use tokio::signal::ctrl_c;
-//! use winctx::{Event, WindowBuilder};
+//! use winctx::{Event, CreateWindow};
 //!
 //! # macro_rules! include_bytes { ($path:literal) => { &[] } }
 //! const ICON: &[u8] = include_bytes!("tokio.ico");
 //!
 //! # #[tokio::main] async fn main() -> winctx::Result<()> {
-//! let mut window = WindowBuilder::new("se.tedro.Example")
+//! let mut window = CreateWindow::new("se.tedro.Example")
 //!     .window_name("Example Application");
 //!
 //! let icon = window.icons().insert_buffer(ICON, 22, 22);
@@ -165,8 +165,8 @@ pub use self::event::Event;
 pub mod event;
 
 #[doc(inline)]
-pub use self::window_builder::WindowBuilder;
-mod window_builder;
+pub use self::create_window::CreateWindow;
+mod create_window;
 
 pub mod area;
 pub mod icons;
@@ -194,7 +194,7 @@ use self::menu_item::MenuItem;
 pub(crate) mod menu_item;
 
 #[doc(inline)]
-pub use self::icon::Icon;
+pub use self::icon::IconId;
 pub mod icon;
 
 #[doc(inline)]

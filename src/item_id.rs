@@ -14,13 +14,13 @@ use crate::AreaId;
 /// use std::pin::pin;
 ///
 /// use tokio::signal::ctrl_c;
-/// use winctx::{Event, WindowBuilder};
+/// use winctx::{Event, CreateWindow};
 ///
 /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
 /// const ICON: &[u8] = include_bytes!("tokio.ico");
 ///
 /// # async fn test() -> winctx::Result<()> {
-/// let mut window = WindowBuilder::new("se.tedro.Example")
+/// let mut window = CreateWindow::new("se.tedro.Example")
 ///     .window_name("Example Application");
 ///
 /// let icon = window.icons().insert_buffer(ICON, 22, 22);

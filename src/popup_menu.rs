@@ -33,10 +33,10 @@ impl PopupMenu {
     /// # Examples
     ///
     /// ```
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     /// use winctx::event::MouseButton;
     ///
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area();
     ///
     /// let menu = area.popup_menu().open_menu([MouseButton::Left, MouseButton::Right]);
@@ -65,9 +65,9 @@ impl PopupMenu {
     /// # Examples
     ///
     /// ```
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area();
     ///
     /// let menu = area.popup_menu();
@@ -94,9 +94,9 @@ impl PopupMenu {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area();
     ///
     /// let menu = area.popup_menu();
@@ -114,9 +114,9 @@ impl PopupMenu {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
-    /// let mut window = WindowBuilder::new("se.tedro.Example");
+    /// let mut window = CreateWindow::new("se.tedro.Example");
     /// let area = window.new_area();
     ///
     /// let menu = area.popup_menu();

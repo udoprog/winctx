@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::{AreaId, Icon, ModifyArea, PopupMenu};
+use crate::{AreaId, IconId, ModifyArea, PopupMenu};
 
 /// A notification area.
 ///
@@ -40,7 +40,7 @@ impl Area {
 
     /// Set the icon of the notification area.
     #[inline]
-    pub fn icon(&mut self, icon: Icon) -> &mut Self {
+    pub fn icon(&mut self, icon: IconId) -> &mut Self {
         self.initial.icon(icon);
         self
     }
