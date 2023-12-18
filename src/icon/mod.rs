@@ -1,3 +1,9 @@
+//! Types related to icons.
+
+#[doc(inline)]
+pub use self::stock_icon::StockIcon;
+mod stock_icon;
+
 /// A reference to an icon.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Icon(u32);
