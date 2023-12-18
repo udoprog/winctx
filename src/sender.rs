@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 
 use crate::icon::StockIcon;
 use crate::notification::NotificationIcon;
-use crate::{AreaId, Icon, ItemId, ModifyArea, ModifyMenuItem, Notification, NotificationId};
+use crate::{AreaId, IconId, ItemId, ModifyArea, ModifyMenuItem, Notification, NotificationId};
 
 #[derive(Debug)]
 pub(super) enum InputEvent {
@@ -101,7 +101,7 @@ pub struct ModifyAreaBuilder<'a> {
 
 impl ModifyAreaBuilder<'_> {
     /// Set the icon of the notification area.
-    pub fn icon(mut self, icon: Icon) -> Self {
+    pub fn icon(mut self, icon: IconId) -> Self {
         self.modify.icon(icon);
         self
     }
@@ -169,10 +169,10 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -195,10 +195,10 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -217,18 +217,18 @@ impl NotificationBuilder<'_> {
         self
     }
 
-    /// Set the notification to be an info notification.
+    /// Set the notification to be informational.
     ///
-    /// This is an alias for [`NotificationBuilder::icon`] with
-    /// [`NotificationIcon::Info`] as an argument.
+    /// This among other things causes the icon to indicate that it's
+    /// informational.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -244,18 +244,17 @@ impl NotificationBuilder<'_> {
         self
     }
 
-    /// Set the notification to be a warning notification.
+    /// Set the notification to be a warning.
     ///
-    /// This is an alias for [`NotificationBuilder::icon`] with
-    /// [`NotificationIcon::Warning`] as an argument.
+    /// This among other things causes the icon to indicate a warning.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -271,18 +270,17 @@ impl NotificationBuilder<'_> {
         self
     }
 
-    /// Set the notification to be an error notification.
+    /// Set the notification to be an error.
     ///
-    /// This is an alias for [`NotificationBuilder::icon`] with
-    /// [`NotificationIcon::Error`] as an argument.
+    /// This among other things causes the icon to indicate an error.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -303,11 +301,11 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     /// use winctx::icon::StockIcon;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -329,10 +327,10 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -357,10 +355,10 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -385,11 +383,11 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     /// use winctx::icon::StockIcon;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -415,11 +413,11 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     /// use winctx::icon::StockIcon;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;
@@ -442,10 +440,10 @@ impl NotificationBuilder<'_> {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
     /// # async fn test() -> winctx::Result<()> {
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area().id();
     ///
     /// let (mut sender, _) = window.build().await?;

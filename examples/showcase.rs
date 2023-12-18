@@ -2,7 +2,7 @@ use std::pin::pin;
 
 use tokio::signal::ctrl_c;
 use winctx::icon::StockIcon;
-use winctx::{Event, WindowBuilder};
+use winctx::{CreateWindow, Event};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
@@ -12,7 +12,7 @@ async fn main() -> winctx::Result<()> {
     let mut is_checked = true;
     let mut is_highlighted = true;
 
-    let mut window = WindowBuilder::new("se.tedro.Example").window_name("Example Application");
+    let mut window = CreateWindow::new("se.tedro.Example").window_name("Example Application");
 
     let initial_icon = window.icons().insert_buffer(ICON, 22, 22);
 

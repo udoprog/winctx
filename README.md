@@ -55,11 +55,11 @@ The basic loop looks like this:
 use std::pin::pin;
 
 use tokio::signal::ctrl_c;
-use winctx::{Event, WindowBuilder};
+use winctx::{Event, CreateWindow};
 
 const ICON: &[u8] = include_bytes!("tokio.ico");
 
-let mut window = WindowBuilder::new("se.tedro.Example")
+let mut window = CreateWindow::new("se.tedro.Example")
     .window_name("Example Application");
 
 let icon = window.icons().insert_buffer(ICON, 22, 22);

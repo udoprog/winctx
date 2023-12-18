@@ -37,9 +37,9 @@ impl MenuItem {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area();
     ///
     /// let mut menu = area.popup_menu();
@@ -55,9 +55,9 @@ impl MenuItem {
     /// # Examples
     ///
     /// ```no_run
-    /// use winctx::WindowBuilder;
+    /// use winctx::CreateWindow;
     ///
-    /// let mut window = WindowBuilder::new("se.tedro.Example");;
+    /// let mut window = CreateWindow::new("se.tedro.Example");;
     /// let area = window.new_area();
     ///
     /// let mut menu = area.popup_menu();

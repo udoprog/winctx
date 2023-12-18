@@ -1,6 +1,6 @@
 /// The identifier for an [`Area`].
 ///
-/// [`Area`]: crate::Area
+/// [`Area`]: crate::area::Area
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct AreaId(u32);
