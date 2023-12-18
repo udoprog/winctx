@@ -1,8 +1,14 @@
+//! Type used to interact with an icons collection.
+
 use crate::{Icon, IconBuffer};
 
 /// A collection of notification icons.
 ///
 /// This defines the various icons that an application using winctx can use.
+///
+/// This is returned by [`WindowBuilder::icons`].
+///
+/// [`WindowBuilder::icons`]: crate::WindowBuilder::icons
 #[derive(Default)]
 pub struct Icons {
     pub(super) icons: Vec<IconBuffer>,
@@ -20,15 +26,15 @@ impl Icons {
     /// # Examples
     ///
     /// ```
-    /// use winctx::Icons;
+    /// use winctx::WindowBuilder;
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
     ///
-    /// let mut icons = Icons::new();
-    /// icons.push_buffer(ICON, 22, 22);
+    /// let mut window = WindowBuilder::new("se.tedro.Example");
+    /// let icon = window.icons().insert_buffer(ICON, 22, 22);
     /// ```
-    pub fn push_buffer<T>(&mut self, buffer: T, width: u32, height: u32) -> Icon
+    pub fn insert_buffer<T>(&mut self, buffer: T, width: u32, height: u32) -> Icon
     where
         T: AsRef<[u8]>,
     {

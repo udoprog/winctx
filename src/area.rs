@@ -1,3 +1,5 @@
+//! Types related to defining the notification area.
+
 use std::fmt;
 
 use crate::{AreaId, Icon, ModifyArea, PopupMenu};

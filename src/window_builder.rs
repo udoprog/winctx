@@ -3,12 +3,14 @@ use std::ffi::OsString;
 
 use tokio::sync::mpsc;
 
+use crate::area::Area;
 use crate::error::ErrorKind::*;
 use crate::error::{SetupIconsError, SetupMenuError};
+use crate::icons::Icons;
 use crate::menu_item::{MenuItem, MenuItemKind};
 use crate::window_loop::PopupMenuHandle;
 use crate::window_loop::{AreaHandle, IconHandle, WindowLoop};
-use crate::{Area, AreaId, EventLoop, Icons, Result, Sender};
+use crate::{AreaId, EventLoop, Result, Sender};
 
 /// The builder of a window context.
 pub struct WindowBuilder {
@@ -85,16 +87,14 @@ impl WindowBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::{Area, Icons, WindowBuilder};
+    /// use winctx::WindowBuilder;
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
     ///
-    /// let mut icons = Icons::new();
-    /// let icon = icons.push_buffer(ICON, 22, 22);
-    ///
-    /// let mut builder = WindowBuilder::new("se.tedro.Example").icons(icons);
-    /// builder.new_area().icon(icon);
+    /// let mut window = WindowBuilder::new("se.tedro.Example");
+    /// let icon = window.icons().insert_buffer(ICON, 22, 22);
+    /// window.new_area().icon(icon);
     /// ```
     pub fn new_area(&mut self) -> &mut Area {
         let id = AreaId::new(self.areas.len() as u32);
@@ -112,22 +112,21 @@ impl WindowBuilder {
     /// # Examples
     ///
     /// ```
-    /// use winctx::{Icons, Area, WindowBuilder};
+    /// use winctx::WindowBuilder;
     ///
     /// # macro_rules! include_bytes { ($path:literal) => { &[] } }
     /// const ICON: &[u8] = include_bytes!("tokio.ico");
     ///
-    /// let mut icons = Icons::new();
-    /// let icon = icons.push_buffer(ICON, 22, 22);
     ///
     /// let mut window = WindowBuilder::new("se.tedro.Example")
-    ///     .window_name("Example Application")
-    ///     .icons(icons);
+    ///     .window_name("Example Application");
+    ///
+    /// let icon = window.icons().insert_buffer(ICON, 22, 22);
     ///
     /// let area = window.new_area().icon(icon).tooltip("Example Application");
     /// ```
-    pub fn icons(self, icons: Icons) -> Self {
-        Self { icons, ..self }
+    pub fn icons(&mut self) -> &mut Icons {
+        &mut self.icons
     }
 
     /// Construct a new event loop and system integration.
