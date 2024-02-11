@@ -16,13 +16,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: ["1.68", stable]
+        rust: ["1.65", stable]
     steps:
     - uses: actions/checkout@v3
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{matrix.rust}}
+    - run: cargo build --workspace
+      if: matrix.rust != 'stable'
     - run: cargo test --workspace --all-targets
+      if: matrix.rust == 'stable'
     - run: cargo test --workspace --doc
       if: matrix.rust == 'stable'
 
