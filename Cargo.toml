@@ -3,7 +3,7 @@ name = "winctx"
 version = "0.0.19"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.70"
 description = """
 A minimal window context for Rust on Windows.
 """
