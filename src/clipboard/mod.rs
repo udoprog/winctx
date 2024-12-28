@@ -76,7 +76,7 @@ pub(super) struct Data<'a> {
     _marker: PhantomData<&'a Clipboard>,
 }
 
-impl<'c> Data<'c> {
+impl Data<'_> {
     pub(super) fn lock(&self) -> io::Result<Lock<'_>> {
         // SAFETY: Construction of Clipboard ensures that this is used
         // correctly.
