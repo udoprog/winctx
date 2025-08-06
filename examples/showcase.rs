@@ -123,7 +123,7 @@ async fn main() -> winctx::Result<()> {
                 println!("Notification dismissed: {area_id:?}: {id:?}");
             }
             Event::CopyData { ty, data, .. } => {
-                println!("Data of type {ty} copied to process: {:?}", data);
+                println!("Data of type {ty} copied to process: {data:?}");
             }
             Event::Shutdown { .. } => {
                 println!("Window shut down");

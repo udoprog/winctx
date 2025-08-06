@@ -182,7 +182,7 @@ impl fmt::Debug for ClipboardFormat {
             Self(ole::CF_TIFF) => write!(f, "TIFF"),
             Self(ole::CF_UNICODETEXT) => write!(f, "UNICODETEXT"),
             Self(ole::CF_WAVE) => write!(f, "WAVE"),
-            Self(format) => write!(f, "UNKNOWN({})", format),
+            Self(format) => write!(f, "UNKNOWN({format})"),
         }
     }
 }
