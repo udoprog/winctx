@@ -3,7 +3,7 @@ name = "winctx"
 version = "0.0.19"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.91"
 description = """
 A minimal window context for Rust on Windows.
 """
@@ -17,10 +17,10 @@ categories = ["asynchronous"]
 
 [dependencies]
 tokio = { version = "1.34.0", features = ["sync", "macros"] }
-windows-core = "0.52.0"
+windows-core = "0.62.2"
 
 [dependencies.windows-sys]
-version = "0.52.0"
+version = "0.61.2"
 features = [
     "Win32_System_Threading",
     "Win32_Foundation",
@@ -36,5 +36,5 @@ features = [
 
 [dev-dependencies]
 anyhow = "1.0.75"
-image = "0.24.7"
+image = "0.25.10"
 tokio = { version = "1.34.0", features = ["full"] }
