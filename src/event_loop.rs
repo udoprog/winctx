@@ -35,8 +35,10 @@ impl EventLoop {
         }
     }
 
-    fn take_notification(&mut self) -> Result<(AreaId, NotificationId)> {
-        let (area_id, id) = self.visible.take().ok_or(MissingNotification)?;
+    fn take_notification(&mut self) -> Result<Option<(AreaId, NotificationId)>> {
+        let Some((area_id, id)) = self.visible.take() else {
+            return Ok(None);
+        };
 
         if let Some((area_id, id, n)) = self.pending.pop_front() {
             self.visible = Some((area_id, id));
@@ -46,7 +48,7 @@ impl EventLoop {
                 .map_err(SendNotification)?;
         }
 
-        Ok((area_id, id))
+        Ok(Some((area_id, id)))
     }
 
     /// Tick the event loop.
@@ -103,18 +105,21 @@ impl EventLoop {
                             return Ok(Event::IconClicked { area_id, event });
                         }
                         WindowEvent::NotificationClicked(actual_menu_id, event) => {
-                            let (area_id, id) = self.take_notification()?;
-                            debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationClicked {
-                                area_id,
-                                id,
-                                event,
-                            });
+                            if let Some((area_id, id)) = self.take_notification()? {
+                                debug_assert_eq!(actual_menu_id, area_id);
+
+                                return Ok(Event::NotificationClicked {
+                                    area_id,
+                                    id,
+                                    event,
+                                });
+                            }
                         }
                         WindowEvent::NotificationDismissed(actual_menu_id) => {
-                            let (area_id, id) = self.take_notification()?;
-                            debug_assert_eq!(actual_menu_id, area_id);
-                            return Ok(Event::NotificationDismissed { area_id, id });
+                            if let Some((area_id, id)) = self.take_notification()? {
+                                debug_assert_eq!(actual_menu_id, area_id);
+                                return Ok(Event::NotificationDismissed { area_id, id });
+                            }
                         }
                         WindowEvent::CopyData(ty, data) => {
                             return Ok(Event::CopyData { ty, data });

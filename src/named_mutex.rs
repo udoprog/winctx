@@ -2,7 +2,6 @@ use core::fmt;
 use std::io;
 use std::ptr;
 
-use windows_core::PCWSTR;
 use windows_sys::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS, TRUE};
 use windows_sys::Win32::System::Threading::CreateMutexW;
 
@@ -53,7 +52,6 @@ impl NamedMutex {
     {
         let name = name.to_string();
         let name = name.to_wide_null();
-        let name = PCWSTR::from_raw(name.as_ptr());
 
         unsafe {
             let handle = CreateMutexW(ptr::null(), TRUE, name.as_ptr());
