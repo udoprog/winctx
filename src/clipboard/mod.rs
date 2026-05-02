@@ -50,7 +50,7 @@ impl Clipboard {
         unsafe {
             let handle = GetClipboardData(format.as_u16() as u32);
 
-            if handle == 0 || handle == INVALID_HANDLE_VALUE {
+            if handle.is_null() || handle == INVALID_HANDLE_VALUE {
                 return Err(io::Error::last_os_error());
             }
 
@@ -115,7 +115,10 @@ impl Lock<'_> {
         // SAFETY: Lock has been correctly acquired.
         unsafe {
             let len = GlobalSize(self.handle) as usize;
-            debug_assert!(len % 2 == 0, "a wide slice must be a multiple of two");
+            debug_assert!(
+                len.is_multiple_of(2),
+                "a wide slice must be a multiple of two"
+            );
             slice::from_raw_parts(self.handle.cast(), len / 2)
         }
     }

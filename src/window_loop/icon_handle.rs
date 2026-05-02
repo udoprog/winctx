@@ -39,7 +39,7 @@ impl IconHandle {
             )
         };
 
-        if hicon == 0 {
+        if hicon.is_null() {
             return Err(io::Error::last_os_error());
         }
 

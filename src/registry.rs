@@ -158,7 +158,7 @@ impl RegistryKey {
             .len()
             .checked_mul(2)
             .and_then(|n| u32::try_from(n).ok())
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Value size overflow"))?;
+            .ok_or_else(|| io::Error::other("Value size overflow"))?;
 
         let status = unsafe {
             winreg::RegSetValueExW(

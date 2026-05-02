@@ -58,7 +58,7 @@ impl NamedMutex {
         unsafe {
             let handle = CreateMutexW(ptr::null(), TRUE, name.as_ptr());
 
-            if handle == 0 {
+            if handle.is_null() {
                 return Err(CreateMutex(io::Error::last_os_error()).into());
             }
 

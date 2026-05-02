@@ -1,6 +1,8 @@
+use core::mem::{size_of, MaybeUninit};
+use core::ptr;
+use core::str;
+
 use std::io;
-use std::mem::{size_of, MaybeUninit};
-use std::str;
 
 use windows_sys::Win32::Foundation::{FALSE, TRUE};
 use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
@@ -22,7 +24,7 @@ impl PopupMenuHandle {
             // Setup menu
             let hmenu = winuser::CreatePopupMenu();
 
-            if hmenu == 0 {
+            if hmenu.is_null() {
                 return Err(io::Error::last_os_error());
             }
 
@@ -33,7 +35,7 @@ impl PopupMenuHandle {
                 fMask: winuser::MIM_APPLYTOSUBMENUS | winuser::MIM_STYLE,
                 dwStyle: winuser::MNS_NOTIFYBYPOS,
                 cyMax: 0,
-                hbrBack: 0,
+                hbrBack: ptr::null_mut(),
                 dwContextHelpID: 0,
                 dwMenuData: 0,
             };

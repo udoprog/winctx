@@ -1,12 +1,12 @@
 #![allow(clippy::field_reassign_with_default)]
 
+use core::ffi::c_void;
+use core::mem::{size_of, ManuallyDrop, MaybeUninit};
+use core::ptr;
+use core::slice;
+
 use std::ffi::OsStr;
 use std::io;
-use std::mem::size_of;
-use std::mem::ManuallyDrop;
-use std::mem::MaybeUninit;
-use std::ptr;
-use std::slice;
 use std::thread;
 
 use tokio::sync::mpsc;
@@ -20,7 +20,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging as winuser;
 use crate::convert::ToWide;
 use crate::error::ErrorKind::*;
 use crate::error::{Error, WindowError};
-use crate::event::{ClipboardEvent, MouseEvent};
+use crate::event::{ClipboardEvent, MouseButtons, MouseEvent};
 use crate::window_loop::messages;
 use crate::AreaId;
 use crate::Result;
@@ -106,10 +106,10 @@ unsafe fn init_window(
         lpfnWndProc: Some(window_proc),
         cbClsExtra: 0,
         cbWndExtra: 0,
-        hInstance: 0,
-        hIcon: 0,
-        hCursor: 0,
-        hbrBackground: 0,
+        hInstance: ptr::null_mut(),
+        hIcon: ptr::null_mut(),
+        hCursor: ptr::null_mut(),
+        hbrBackground: ptr::null_mut(),
         lpszMenuName: ptr::null(),
         lpszClassName: class_name.as_ptr(),
     };
@@ -129,13 +129,13 @@ unsafe fn init_window(
         0,
         0,
         0,
-        0,
-        0,
-        0,
+        ptr::null_mut(),
+        ptr::null_mut(),
+        ptr::null_mut(),
         ptr::null(),
     );
 
-    if hwnd == 0 {
+    if hwnd.is_null() {
         return Err(io::Error::last_os_error());
     }
 
@@ -183,81 +183,16 @@ impl WindowLoop {
             );
         }
 
-        let thread = thread::spawn(move || unsafe {
-            // NB: Don't move this, it's important that the window is
-            // initialized in the background thread.
-            let (window_class, window) =
-                init_window(class_name, window_name).map_err(WindowError::Init)?;
+        let runner = Runner {
+            class_name,
+            window_name,
+            clipboard_events,
+            hmenus,
+            events_tx,
+            return_tx,
+        };
 
-            let mut clipboard_manager = if clipboard_events {
-                if AddClipboardFormatListener(window.hwnd) == FALSE {
-                    return Err(WindowError::AddClipboardFormatListener(
-                        io::Error::last_os_error(),
-                    ));
-                }
-
-                Some(ClipboardManager::new(&events_tx))
-            } else {
-                None
-            };
-
-            let mut menu_manager =
-                (!hmenus.is_empty()).then(|| MenuManager::new(&events_tx, &hmenus));
-
-            let hwnd = window.hwnd;
-
-            if return_tx.send((window_class, window)).is_err() {
-                return Ok(());
-            }
-
-            let mut msg = MaybeUninit::zeroed();
-
-            while winuser::GetMessageW(msg.as_mut_ptr(), hwnd, 0, 0) != FALSE {
-                let msg = &*msg.as_ptr();
-
-                if let Some(clipboard_manager) = &mut clipboard_manager {
-                    if clipboard_manager.dispatch(msg) {
-                        continue;
-                    }
-                }
-
-                if let Some(menu_manager) = &mut menu_manager {
-                    if menu_manager.dispatch(msg) {
-                        continue;
-                    }
-                }
-
-                match msg.message {
-                    winuser::WM_QUIT | winuser::WM_DESTROY => {
-                        break;
-                    }
-                    messages::BYTES_ID => {
-                        let len = msg.wParam;
-
-                        let bytes = Vec::from_raw_parts(
-                            msg.lParam as *mut u8,
-                            len,
-                            len + size_of::<usize>(),
-                        );
-
-                        let ty = bytes
-                            .as_ptr()
-                            .add(bytes.len())
-                            .cast::<usize>()
-                            .read_unaligned();
-
-                        _ = events_tx.send(WindowEvent::CopyData(ty, bytes));
-                        continue;
-                    }
-                    _ => {}
-                }
-
-                winuser::TranslateMessage(msg);
-                winuser::DispatchMessageW(msg);
-            }
-
-            Ok(())
-        });
+        let thread = thread::spawn(move || unsafe { runner.run() });
 
         let Some((window_class, window)) = return_rx.await.ok() else {
             thread.join().map_err(|_| WindowError::ThreadPanicked)??;
@@ -313,3 +248,89 @@ impl Drop for WindowLoop {
         }
     }
 }
+
+struct Runner {
+    class_name: Vec<u16>,
+    window_name: Option<Vec<u16>>,
+    clipboard_events: bool,
+    hmenus: Vec<Option<(*mut c_void, MouseButtons)>>,
+    events_tx: mpsc::UnboundedSender<WindowEvent>,
+    return_tx: oneshot::Sender<(WindowClassHandle, WindowHandle)>,
+}
+
+impl Runner {
+    unsafe fn run(self) -> Result<(), WindowError> {
+        // NB: Don't move this, it's important that the window is
+        // initialized in the background thread.
+        let (window_class, window) =
+            init_window(self.class_name, self.window_name).map_err(WindowError::Init)?;
+
+        let mut clipboard_manager = if self.clipboard_events {
+            if AddClipboardFormatListener(window.hwnd) == FALSE {
+                return Err(WindowError::AddClipboardFormatListener(
+                    io::Error::last_os_error(),
+                ));
+            }
+
+            Some(ClipboardManager::new(&self.events_tx))
+        } else {
+            None
+        };
+
+        let mut menu_manager =
+            (!self.hmenus.is_empty()).then(|| MenuManager::new(&self.events_tx, &self.hmenus));
+
+        let hwnd = window.hwnd;
+
+        if self.return_tx.send((window_class, window)).is_err() {
+            return Ok(());
+        }
+
+        let mut msg = MaybeUninit::zeroed();
+
+        while winuser::GetMessageW(msg.as_mut_ptr(), hwnd, 0, 0) != FALSE {
+            let msg = &*msg.as_ptr();
+
+            if let Some(clipboard_manager) = &mut clipboard_manager {
+                if clipboard_manager.dispatch(msg) {
+                    continue;
+                }
+            }
+
+            if let Some(menu_manager) = &mut menu_manager {
+                if menu_manager.dispatch(msg) {
+                    continue;
+                }
+            }
+
+            match msg.message {
+                winuser::WM_QUIT | winuser::WM_DESTROY => {
+                    break;
+                }
+                messages::BYTES_ID => {
+                    let len = msg.wParam;
+
+                    let bytes =
+                        Vec::from_raw_parts(msg.lParam as *mut u8, len, len + size_of::<usize>());
+
+                    let ty = bytes
+                        .as_ptr()
+                        .add(bytes.len())
+                        .cast::<usize>()
+                        .read_unaligned();
+
+                    _ = self.events_tx.send(WindowEvent::CopyData(ty, bytes));
+                    continue;
+                }
+                _ => {}
+            }
+
+            winuser::TranslateMessage(msg);
+            winuser::DispatchMessageW(msg);
+        }
+
+        Ok(())
+    }
+}
+
+unsafe impl Send for Runner {}

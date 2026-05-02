@@ -29,7 +29,7 @@ where
 
     let result = unsafe {
         ShellExecuteW(
-            0,
+            ptr::null_mut(),
             operation.as_ptr(),
             path.as_ptr(),
             ptr::null(),

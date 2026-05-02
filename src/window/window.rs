@@ -3,7 +3,6 @@ use std::fmt;
 use std::io;
 use std::ptr;
 
-use windows_sys::Win32::Foundation::GetLastError;
 use windows_sys::Win32::Foundation::HWND;
 use windows_sys::Win32::System::DataExchange::COPYDATASTRUCT;
 use windows_sys::Win32::UI::WindowsAndMessaging::FindWindowExW;
@@ -89,20 +88,14 @@ impl FindWindow {
         // SAFETY: All arguments are correctly popuplated by this builder.
         unsafe {
             let hwnd = FindWindowExW(
-                0,
-                0,
+                ptr::null_mut(),
+                ptr::null_mut(),
                 self.class.as_ref().map_or(ptr::null(), |c| c.as_ptr()),
                 self.title.as_ref().map_or(ptr::null(), |c| c.as_ptr()),
             );
 
-            if hwnd == 0 {
-                let code = GetLastError();
-
-                if code == 0 {
-                    return Ok(None);
-                }
-
-                return Err(io::Error::from_raw_os_error(code as i32));
+            if hwnd.is_null() {
+                return Err(io::Error::last_os_error());
             }
 
             Ok(Some(Window { hwnd }))
